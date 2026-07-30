@@ -115,7 +115,7 @@ export function PageForm({ initialData, onSubmit, onCancel }: PageFormProps) {
         <Label htmlFor="href" className="flex items-center gap-2">
           URL / Link *
           {isExternal ? (
-            <span className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+            <span className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-0.5 rounded-full">
               <Globe className="h-3 w-3" />
               External
             </span>
@@ -135,7 +135,7 @@ export function PageForm({ initialData, onSubmit, onCancel }: PageFormProps) {
         {form.formState.errors.href && (
           <p className="text-sm text-red-500">{form.formState.errors.href.message}</p>
         )}
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted-foreground">
           Use full URL (https://...) for external websites or path (/...) for internal pages
         </p>
       </div>
@@ -155,10 +155,10 @@ export function PageForm({ initialData, onSubmit, onCancel }: PageFormProps) {
       </div>
 
       <div className="space-y-3">
-        <Label>Tags * <span className="text-slate-400 font-normal text-sm">(Press Enter to add)</span></Label>
-        <div className="flex flex-wrap gap-2 mb-3 min-h-[2.5rem] p-2 bg-slate-50 rounded-lg border border-slate-200">
+        <Label>Tags * <span className="text-muted-foreground font-normal text-sm">(Press Enter to add)</span></Label>
+        <div className="flex flex-wrap gap-2 mb-3 min-h-[2.5rem] p-2 bg-muted/50 rounded-lg border border-border">
           {tags.length === 0 && (
-            <span className="text-sm text-slate-400 italic flex items-center px-2">
+            <span className="text-sm text-muted-foreground italic flex items-center px-2">
               No tags added yet
             </span>
           )}
@@ -191,7 +191,7 @@ export function PageForm({ initialData, onSubmit, onCancel }: PageFormProps) {
         )}
       </div>
 
-      <div className="flex gap-3 pt-6 border-t border-slate-200">
+      <div className="flex gap-3 pt-6 border-t border-border">
         <Button 
           type="button" 
           variant="outline" 

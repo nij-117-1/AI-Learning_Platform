@@ -7,6 +7,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { Navbar } from "@/features/navigation/components/Navbar";
+import { PageTitleProvider } from "@/features/navigation/components/page-title-context";
 import { validateIdentity } from "@/features/identity/lib/auth-guard";
 
 interface AuthenticatedLayoutProps {
@@ -28,17 +29,19 @@ export default async function AuthenticatedLayout({ children }: AuthenticatedLay
   await validateIdentity();
   
   return (
-    <div className="relative flex min-h-screen flex-col bg-background">
-      {/* Global Application Navigation */}
-      <Navbar />
-      
-      {/* Core Content Area 
-        FIXED: Removed 'container mx-auto' to enable full-bleed edge-to-edge layouts.
-        Added 'w-full px-6 lg:px-8' for clean, dynamic responsive side padding.
-      */}
-      <main className="flex-1 w-full px-6 py-8 md:px-8 lg:px-12">
-        {children}
-      </main>
-    </div>
+    <PageTitleProvider>
+      <div className="relative flex min-h-screen flex-col bg-background">
+        {/* Global Application Navigation */}
+        <Navbar />
+        
+        {/* Core Content Area 
+          FIXED: Removed 'container mx-auto' to enable full-bleed edge-to-edge layouts.
+          Added 'w-full px-6 lg:px-8' for clean, dynamic responsive side padding.
+        */}
+        <main className="flex-1 w-full px-6 py-8 md:px-8 lg:px-12">
+          {children}
+        </main>
+      </div>
+    </PageTitleProvider>
   );
 }

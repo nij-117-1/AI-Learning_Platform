@@ -50,30 +50,30 @@ export function UserManagement({ initialUsers }: UserManagementProps) {
         <CreateUserDialog onCreated={refreshUsers} />
       </div>
 
-      <div className="rounded-lg border overflow-x-auto">
+      <div className="rounded-lg border border-border overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b bg-slate-50">
-              <th className="px-4 py-3 text-left font-medium text-slate-600">Username</th>
-              <th className="px-4 py-3 text-left font-medium text-slate-600">Email</th>
-              <th className="px-4 py-3 text-left font-medium text-slate-600">Roles</th>
-              <th className="px-4 py-3 text-left font-medium text-slate-600">Status</th>
-              <th className="px-4 py-3 text-left font-medium text-slate-600">Created</th>
-              <th className="px-4 py-3 text-left font-medium text-slate-600">Actions</th>
+            <tr className="border-b border-border bg-muted/50">
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Username</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Email</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Roles</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Created</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
           <tbody>
             {users.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                   No users found
                 </td>
               </tr>
             ) : (
               users.map((user) => (
-                <tr key={user.username} className="border-b last:border-0 hover:bg-slate-50/50">
-                  <td className="px-4 py-3 font-medium text-slate-900">{user.username}</td>
-                  <td className="px-4 py-3 text-slate-600">{user.email}</td>
+                <tr key={user.username} className="border-b border-border last:border-0 hover:bg-muted/50">
+                  <td className="px-4 py-3 font-medium text-foreground">{user.username}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{user.email}</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {user.roles.map((role) => (
@@ -90,12 +90,12 @@ export function UserManagement({ initialUsers }: UserManagementProps) {
                         disabled={isPending}
                         onCheckedChange={() => handleToggleActive(user.username)}
                       />
-                      <span className={`text-xs font-medium ${user.active ? 'text-green-600' : 'text-slate-400'}`}>
+                      <span className={`text-xs font-medium ${user.active ? 'text-green-600' : 'text-muted-foreground'}`}>
                         {user.active ? 'Active' : 'Inactive'}
                       </span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
+                  <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3">

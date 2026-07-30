@@ -51,7 +51,7 @@ export async function createPage(data: PageFormData): Promise<{ success: boolean
     
     await writePages([newPage, ...pages]);
     revalidatePath("/dashboard");
-    revalidatePath("/dashboard/admin");
+    revalidatePath("/admin/pages");
     return { success: true };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -77,7 +77,7 @@ export async function updatePage(data: PageFormData): Promise<{ success: boolean
     await writePages(pages);
     
     revalidatePath("/dashboard");
-    revalidatePath("/dashboard/admin");
+    revalidatePath("/admin/pages");
     return { success: true };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -94,7 +94,7 @@ export async function deletePage(id: string): Promise<{ success: boolean; error?
     await writePages(filtered);
     
     revalidatePath("/dashboard");
-    revalidatePath("/dashboard/admin");
+    revalidatePath("/admin/pages");
     return { success: true };
   } catch {
     return { success: false, error: "Failed to delete page" };

@@ -61,10 +61,6 @@ export function AdminContainer() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Page Management</h2>
-          <p className="text-slate-500 text-sm">Create, edit, and organize dashboard resources.</p>
-        </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={loadPages} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
@@ -75,9 +71,9 @@ export function AdminContainer() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 bg-card p-4 rounded-xl border border-border shadow-sm">
         <div className="sm:col-span-2 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Search by title, description or tags..." 
             className="pl-9"
@@ -100,7 +96,7 @@ export function AdminContainer() {
         <Button 
           variant="ghost" 
           onClick={() => { setSearchQuery(""); setCategoryFilter("all"); }}
-          className="text-slate-500 gap-2"
+          className="text-muted-foreground gap-2"
         >
           <FilterX className="h-4 w-4" /> Reset
         </Button>

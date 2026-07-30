@@ -33,8 +33,8 @@ interface PageAdminListProps {
 export function PageAdminList({ pages, onEdit, onDelete, isDeleting }: PageAdminListProps) {
   if (pages.length === 0) {
     return (
-      <div className="text-center py-16 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">
-        <p className="text-slate-500">No pages found. Create your first page to get started.</p>
+      <div className="text-center py-16 border-2 border-dashed border-border rounded-xl bg-muted/50">
+        <p className="text-muted-foreground">No pages found. Create your first page to get started.</p>
       </div>
     );
   }
@@ -49,22 +49,22 @@ export function PageAdminList({ pages, onEdit, onDelete, isDeleting }: PageAdmin
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="flex-1 space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-lg font-semibold text-slate-900 group-hover:text-primary transition-colors">
+                  <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
                     {page.title}
                   </h3>
                   <Badge variant="secondary" className="text-xs">
                     {page.category}
                   </Badge>
                   {isExternal(page.href) && (
-                    <Badge variant="outline" className="text-xs gap-1 text-blue-600 border-blue-200 bg-blue-50">
+                    <Badge variant="outline" className="text-xs gap-1 text-primary border-primary/20 bg-primary/5">
                       <Globe className="h-3 w-3" />
                       External
                     </Badge>
                   )}
                 </div>
-                <p className="text-slate-600 text-sm max-w-2xl line-clamp-2">{page.description}</p>
-                <div className="flex items-center gap-2 text-xs text-slate-500">
-                  <span className="font-mono bg-slate-100 px-2 py-1 rounded">{page.href}</span>
+                <p className="text-muted-foreground text-sm max-w-2xl line-clamp-2">{page.description}</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="font-mono bg-muted px-2 py-1 rounded">{page.href}</span>
                   <span>•</span>
                   <span>{page.tags.length} tags</span>
                 </div>

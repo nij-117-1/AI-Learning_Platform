@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { validateIdentity } from "@/features/identity/lib/auth-guard";
 import { Footer } from "@/features/common/components/Footer";
 import { PagesContainer } from "@/features/pages/components/PagesContainer";
+import { SetPageTitle } from "@/features/navigation/components/SetPageTitle";
 import type { Page } from "@/features/pages/types/page";
 import { getPages } from "@/features/masteradmin/admin/actions/page-actions";
 
@@ -32,7 +33,8 @@ export default async function DashboardPage() {
   }, {});
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50/50">
+    <div className="flex min-h-screen flex-col bg-background">
+      <SetPageTitle title="Dashboard" />
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
         {/* Hero */}
         <header className="mb-6">
@@ -40,7 +42,7 @@ export default async function DashboardPage() {
             {Object.entries(categoryCounts).map(([cat, count]) => (
               <div
                 key={cat}
-                className="inline-flex items-center gap-1.5 rounded-full bg-white border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 shadow-sm"
+                className="inline-flex items-center gap-1.5 rounded-full bg-card border border-border px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm"
               >
                 {cat}
                 <span className="text-primary font-bold">{count}</span>

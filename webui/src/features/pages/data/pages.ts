@@ -62,5 +62,13 @@ export const pages: Page[] = [
     href: "/dashboard/security",
     category: "Security",
     tags: ["logs", "audit", "2fa", "protection", "privacy"]
+  },
+  {
+    id: "admin",
+    title: "Admin Panel",
+    description: "Manage users, pages, billing, and system settings.",
+    href: "/admin",
+    category: "Administration",
+    tags: ["admin", "management", "settings", "users", "configuration"]
   }
 ];
