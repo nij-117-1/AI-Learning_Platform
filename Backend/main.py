@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from core.config import settings
+from assessment.router import assessment_router
 from learning.router import learning_router
 from practice.router import practice_router
 
@@ -62,6 +63,7 @@ app.add_middleware(APITraceMiddleware)
 
 app.include_router(practice_router)
 app.include_router(learning_router)
+app.include_router(assessment_router)
 
 @app.get("/health")
 async def health_check():

@@ -24,6 +24,12 @@ class Settings:
     # API Security Configuration
     API_KEY: str = os.getenv("API_KEY", "")
 
+    # Performance Grader Configuration
+    GRADER_STORAGE_DIR: str = os.getenv("GRADER_STORAGE_DIR", "Data/Grader")
+
+    # Adaptive Tutor Configuration
+    TUTOR_PROMPTS_DIR: str = os.getenv("TUTOR_PROMPTS_DIR", "")
+
     # App Configuration
     APP_NAME: str = os.getenv("APP_NAME", "AI Learning Platform")
     DEBUG: bool = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")

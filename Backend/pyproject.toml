@@ -8,9 +8,12 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "aiofiles>=25.1.0",
     "dspy>=3.2.1",
     "fastapi>=0.141.1",
+    "pillow>=12.3.0",
     "python-dotenv>=1.2.2",
+    "python-multipart>=0.0.32",
     "uvicorn>=0.52.0",
 ]
 
