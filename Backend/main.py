@@ -6,6 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from core.config import settings
 from assessment.router import assessment_router
 from learning.router import learning_router
+from linguistic.router import linguistic_router
 from practice.router import practice_router
 
 logging.basicConfig(
@@ -63,6 +64,7 @@ app.add_middleware(APITraceMiddleware)
 
 app.include_router(practice_router)
 app.include_router(learning_router)
+app.include_router(linguistic_router)
 app.include_router(assessment_router)
 
 @app.get("/health")

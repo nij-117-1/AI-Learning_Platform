@@ -30,6 +30,10 @@ class Settings:
     # Adaptive Tutor Configuration
     TUTOR_PROMPTS_DIR: str = os.getenv("TUTOR_PROMPTS_DIR", "")
 
+    # Linguistic Module Storage Configuration
+    ROLEPLAY_STORAGE_DIR: str = os.getenv("ROLEPLAY_STORAGE_DIR", "Data/Linguistic/Roleplays")
+    SIMULATOR_PROMPTS_FILE: str = os.getenv("SIMULATOR_PROMPTS_FILE", "Data/Linguistic/Simulator/prompts.yaml")
+
     # App Configuration
     APP_NAME: str = os.getenv("APP_NAME", "AI Learning Platform")
     DEBUG: bool = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
