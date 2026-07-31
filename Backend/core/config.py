@@ -1,0 +1,44 @@
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    logger.debug("Loaded .env file via python-dotenv")
+except ImportError:
+    logger.debug("python-dotenv not installed; relying on os.getenv defaults")
+
+
+class Settings:
+    # LLM Configuration
+    LLM_MODEL_NAME: str = os.getenv("LLM_MODEL_NAME", "gpt-4o-mini")
+    LLM_API_KEY: str = os.getenv("LLM_API_KEY", "")
+    LLM_API_BASE: str = os.getenv("LLM_API_BASE", "https://api.openai.com/v1")
+    LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.7"))
+
+    # API Tracing Configuration
+    API_TRACE_ENABLED: bool = os.getenv("API_TRACE_ENABLED", "false").lower() in ("true", "1", "yes")
+
+    # API Security Configuration
+    API_KEY: str = os.getenv("API_KEY", "")
+
+    # App Configuration
+    APP_NAME: str = os.getenv("APP_NAME", "AI Learning Platform")
+    DEBUG: bool = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "DEBUG" if os.getenv("DEBUG", "false").lower() in ("true", "1", "yes") else "INFO").upper()
+    HOST: str = os.getenv("HOST", "0.0.0.0")
+    PORT: int = int(os.getenv("PORT", "8000"))
+
+    
+
+
+settings = Settings()
+
+master_llm_config = {
+    "model_name": settings.LLM_MODEL_NAME,
+    "api_key": settings.LLM_API_KEY,
+    "api_base": settings.LLM_API_BASE,
+    "temperature": settings.LLM_TEMPERATURE,
+}
