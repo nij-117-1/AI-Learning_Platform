@@ -37,6 +37,9 @@ class Settings:
     # Ingredients Analyzer Configuration
     INGREDIENTS_STORAGE_DIR: str = os.getenv("INGREDIENTS_STORAGE_DIR", "Data/Ingredients")
 
+    # Vision Converter Configuration
+    VISION_STORAGE_DIR: str = os.getenv("VISION_STORAGE_DIR", "Data/VisionConverter")
+
     # App Configuration
     APP_NAME: str = os.getenv("APP_NAME", "AI Learning Platform")
     DEBUG: bool = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
