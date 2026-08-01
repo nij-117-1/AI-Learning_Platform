@@ -1,5 +1,6 @@
 import logging
-from fastapi import Depends
+from typing import Iterator
+
 from core.security import verify_api_key
 
 logger = logging.getLogger(__name__)
@@ -7,7 +8,7 @@ logger = logging.getLogger(__name__)
 __all__ = ["get_debate_service", "verify_api_key"]
 
 
-def get_debate_service():
+def get_debate_service() -> Iterator["DebateService"]:
     """
     Dependency provider for DebateService.
 
@@ -16,8 +17,4 @@ def get_debate_service():
     """
     from practice.debate.services import DebateService
 
-    service = DebateService()
-    try:
-        yield service
-    finally:
-        pass
+    yield DebateService()
