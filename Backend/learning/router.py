@@ -3,6 +3,7 @@ from learning.explainer.router import router as explainer_router
 from learning.guides.router import router as guides_router
 from learning.memory_helper.router import router as memory_helper_router
 from learning.motivation.router import router as motivation_router
+from learning.projects.router import router as projects_router
 from learning.roadmap.router import router as roadmap_router
 from learning.tutor.router import router as tutor_router
 
@@ -13,5 +14,6 @@ learning_router.include_router(tutor_router)
 learning_router.include_router(motivation_router)
 learning_router.include_router(memory_helper_router)
 learning_router.include_router(guides_router)
+learning_router.include_router(projects_router)
 
 __all__ = ["learning_router"]
