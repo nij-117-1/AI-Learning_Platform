@@ -34,6 +34,9 @@ class Settings:
     ROLEPLAY_STORAGE_DIR: str = os.getenv("ROLEPLAY_STORAGE_DIR", "Data/Linguistic/Roleplays")
     SIMULATOR_PROMPTS_FILE: str = os.getenv("SIMULATOR_PROMPTS_FILE", "Data/Linguistic/Simulator/prompts.yaml")
 
+    # Ingredients Analyzer Configuration
+    INGREDIENTS_STORAGE_DIR: str = os.getenv("INGREDIENTS_STORAGE_DIR", "Data/Ingredients")
+
     # App Configuration
     APP_NAME: str = os.getenv("APP_NAME", "AI Learning Platform")
     DEBUG: bool = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")

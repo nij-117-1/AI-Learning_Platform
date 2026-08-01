@@ -81,7 +81,7 @@ async def get_embeddings(request: EmbeddingRequest):
 if __name__ == "__main__":
     import uvicorn
     # Limit workers to 1 to prevent multiple processes from cloning the 6GB memory space
-    uvicorn.run(app, host="0.0.0.0", port=18074, workers=1)
+    uvicorn.run(app, host="0.0.0.0", port=18074, workers=2)
 
 # f
 
