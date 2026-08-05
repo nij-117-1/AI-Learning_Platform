@@ -1,5 +1,131 @@
 [
   {
+    "id": "learning",
+    "title": "Learning Hub",
+    "description": "AI-powered explainer tools: quick explanations, A-to-Z tutorials, Feynman simplifications, and more.",
+    "href": "/learning",
+    "category": "Education",
+    "tags": [
+      "learning",
+      "explainer",
+      "tutorial",
+      "study",
+      "education"
+    ]
+  },
+  {
+    "id": "roadmap",
+    "title": "Roadmap Planner",
+    "description": "Generate AI-powered learning roadmaps with main points, subpoints, milestones, and progress tracking.",
+    "href": "/learning/roadmap",
+    "category": "Education",
+    "tags": [
+      "roadmap",
+      "learning",
+      "planner",
+      "study",
+      "education"
+    ]
+  },
+  {
+    "id": "guides",
+    "title": "Learning Guides",
+    "description": "Guided tasks, daily study plans, project blueprints, and topic and project suggestions powered by AI.",
+    "href": "/learning/guides",
+    "category": "Education",
+    "tags": [
+      "learning",
+      "guides",
+      "tasks",
+      "planner",
+      "education"
+    ]
+  },
+  {
+    "id": "memory-helper",
+    "title": "Memory Mnemonics",
+    "description": "Transform complex data into structured mnemonics and a spaced retention plan.",
+    "href": "/learning/memory-helper",
+    "category": "Education",
+    "tags": [
+      "learning",
+      "memory",
+      "mnemonics",
+      "study",
+      "education"
+    ]
+  },
+  {
+    "id": "motivation",
+    "title": "Motivation & Reflection",
+    "description": "Personalized motivational quotes and deep journaling prompts tuned to your emotional state.",
+    "href": "/learning/motivation",
+    "category": "Education",
+    "tags": [
+      "learning",
+      "motivation",
+      "reflection",
+      "journal",
+      "education"
+    ]
+  },
+  {
+    "id": "projects",
+    "title": "Project Recommender",
+    "description": "Hands-on project ideas matched to your topic, scope, and difficulty level.",
+    "href": "/learning/projects",
+    "category": "Education",
+    "tags": [
+      "learning",
+      "projects",
+      "practice",
+      "build",
+      "education"
+    ]
+  },
+  {
+    "id": "skill-architect",
+    "title": "Skill Architect",
+    "description": "Deconstruct a domain into its root skills and a level-wise progression tree with proof of mastery.",
+    "href": "/learning/skill-architect",
+    "category": "Education",
+    "tags": [
+      "learning",
+      "skills",
+      "architecture",
+      "progression",
+      "education"
+    ]
+  },
+  {
+    "id": "tutor",
+    "title": "Adaptive Tutor",
+    "description": "Personalized explanations adapted to your level, learning style, and current scenario.",
+    "href": "/learning/tutor",
+    "category": "Education",
+    "tags": [
+      "learning",
+      "tutor",
+      "adaptive",
+      "explanation",
+      "education"
+    ]
+  },
+  {
+    "id": "tutor-chat",
+    "title": "Tutor Chat",
+    "description": "A topic-scoped tutor chatbot that explains concepts and breaks them down each turn.",
+    "href": "/learning/tutor-chat",
+    "category": "Education",
+    "tags": [
+      "learning",
+      "chatbot",
+      "tutor",
+      "conversation",
+      "education"
+    ]
+  },
+  {
     "id": "admin",
     "title": "Admin Panel",
     "description": "Manage users, pages, billing, and system settings.",
