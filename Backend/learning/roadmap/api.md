@@ -122,6 +122,7 @@ Optional `X-API-Key` header. When `API_KEY` is set in the environment, the serve
 | `LLM_API_KEY` | *(empty)* | Provider API key |
 | `LLM_API_BASE` | `https://api.openai.com/v1` | OpenAI-compatible base URL |
 | `LLM_TEMPERATURE` | `0.7` | Sampling temperature |
+| `MODEL_NATIVE_COT` | `false` | When `true`, the LLM natively reasons, so `Predict` is used instead of DSPy `ChainOfThought` |
 | `DEBUG` | `false` | FastAPI debug mode |
 | `LOG_LEVEL` | `INFO` (`DEBUG` if `DEBUG=true`) | Logging verbosity |
 | `HOST` / `PORT` | `0.0.0.0` / `8000` | Uvicorn bind address |

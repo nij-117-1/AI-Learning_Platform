@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from learning.roadmap.schemas import RoadmapRequest, SubtopicRequest
 
 logger = logging.getLogger(__name__)
@@ -68,12 +68,7 @@ class RoadmapService:
     """Business layer wrapping the DSPy roadmap generation pipelines."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.7),
-        )
+        self.lm = build_lm()
 
     async def generate_roadmap_data(self, data: RoadmapRequest) -> Tuple[str, List[str]]:
         """
@@ -89,29 +84,30 @@ class RoadmapService:
             GenerationError: If the DSPy pipeline fails to generate content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                logger.info("Step 1: Generating persona for %s", data.subject)
-                persona_engine = dspy.Predict(PersonaGenerator)
-                persona_resp = persona_engine(
-                    learning_topic=data.subject,
-                    target_level=data.target_level,
-                    persona_requirements=data.persona_style,
-                )
+            logger.info("Step 1: Generating persona for %s", data.subject)
+            persona_resp = run_predictor(
+                PersonaGenerator,
+                self.lm,
+                learning_topic=data.subject,
+                target_level=data.target_level,
+                persona_requirements=data.persona_style,
+            )
 
-                active_persona = persona_resp.generated_persona_prompt
+            active_persona = persona_resp.generated_persona_prompt
 
-                logger.info("Step 2: Generating main topics for %s", data.subject)
-                topic_engine = dspy.Predict(MainTopicGenerator)
-                main_resp = topic_engine(
-                    persona=active_persona,
-                    learning_topic=data.subject,
-                    current_level=data.start_level,
-                    target_level=data.target_level,
-                    roadmap_type=data.mode,
-                    user_instructions=data.user_instructions,
-                )
+            logger.info("Step 2: Generating main topics for %s", data.subject)
+            main_resp = run_predictor(
+                MainTopicGenerator,
+                self.lm,
+                persona=active_persona,
+                learning_topic=data.subject,
+                current_level=data.start_level,
+                target_level=data.target_level,
+                roadmap_type=data.mode,
+                user_instructions=data.user_instructions,
+            )
 
-                return active_persona, main_resp.main_topics
+            return active_persona, main_resp.main_topics
         except Exception as exc:
             logger.error("Error in roadmap AI generation for %s: %s", data.subject, exc, exc_info=True)
             raise GenerationError(str(exc)) from exc
@@ -130,24 +126,24 @@ class RoadmapService:
             GenerationError: If the DSPy pipeline fails to generate content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                logger.info("Expanding subtopics for module: %s", data.current_module)
+            logger.info("Expanding subtopics for module: %s", data.current_module)
 
-                subtopic_engine = dspy.ChainOfThought(SubtopicGenerator)
-                sub_resp = subtopic_engine(
-                    persona=data.persona,
-                    learning_topic=data.subject,
-                    user_target_level=data.target_level,
-                    full_topic_list=data.full_topic_list,
-                    current_module=data.current_module,
-                    roadmap_type=data.mode,
-                )
+            sub_resp = run_predictor(
+                SubtopicGenerator,
+                self.lm,
+                persona=data.persona,
+                learning_topic=data.subject,
+                user_target_level=data.target_level,
+                full_topic_list=data.full_topic_list,
+                current_module=data.current_module,
+                roadmap_type=data.mode,
+            )
 
-                return {
-                    "topic": data.current_module,
-                    "subtopics": sub_resp.subtopics,
-                    "milestone": sub_resp.milestone,
-                }
+            return {
+                "topic": data.current_module,
+                "subtopics": sub_resp.subtopics,
+                "milestone": sub_resp.milestone,
+            }
         except Exception as exc:
             logger.error("Subtopic generation error for module %s: %s", data.current_module, exc, exc_info=True)
             raise GenerationError(str(exc)) from exc

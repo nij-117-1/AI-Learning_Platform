@@ -18,6 +18,12 @@ class Settings:
     LLM_API_BASE: str = os.getenv("LLM_API_BASE", "https://api.openai.com/v1")
     LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.7"))
 
+    # DSPy Reasoning Configuration
+    # When true, the underlying LLM natively performs chain-of-thought
+    # reasoning, so the DSPy ChainOfThought wrapper is skipped in favor of
+    # plain Predict.
+    MODEL_NATIVE_COT: bool = os.getenv("MODEL_NATIVE_COT", "false").lower() in ("true", "1", "yes")
+
     # API Tracing Configuration
     API_TRACE_ENABLED: bool = os.getenv("API_TRACE_ENABLED", "false").lower() in ("true", "1", "yes")
 
