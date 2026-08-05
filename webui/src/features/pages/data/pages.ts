@@ -8,6 +8,94 @@ import { Page } from "../types/page";
 
 export const pages: Page[] = [
   {
+    id: "linguistic",
+    title: "Linguistic Hub",
+    description: "AI-powered language tools: idiomatic expressions with meaning, cultural context, and real-world usage.",
+    href: "/linguistic",
+    category: "Education",
+    tags: ["linguistic", "language", "idioms", "learning", "education"]
+  },
+  {
+    id: "idioms",
+    title: "Idioms",
+    description: "Learn an idiomatic expression in a target language with meaning, pronunciation, and a dialogue.",
+    href: "/linguistic/idioms",
+    category: "Education",
+    tags: ["linguistic", "idioms", "language", "expressions", "education"]
+  },
+  {
+    id: "word-of-the-day",
+    title: "Word of the Day",
+    description: "Discover a rich word from a target language with pronunciation, morphology, and history.",
+    href: "/linguistic/word-of-the-day",
+    category: "Education",
+    tags: ["linguistic", "word", "language", "vocabulary", "education"]
+  },
+  {
+    id: "translator",
+    title: "Translator",
+    description: "Contextual translation with a chosen tone, reference material, and cultural notes.",
+    href: "/linguistic/translator",
+    category: "Education",
+    tags: ["linguistic", "translator", "translation", "language", "education"]
+  },
+  {
+    id: "simulator",
+    title: "Simulator",
+    description: "Behavioral simulations: put a persona in a scenario, deliver your line, and see how they think, act, and reply.",
+    href: "/linguistic/simulator",
+    category: "Education",
+    tags: ["linguistic", "simulator", "roleplay", "conversation", "education"]
+  },
+  {
+    id: "sentence-of-the-day",
+    title: "Sentence of the Day",
+    description: "Discover the daily featured sentence in a target language with grammar, culture, and variations.",
+    href: "/linguistic/sentence-of-the-day",
+    category: "Education",
+    tags: ["linguistic", "sentence", "language", "grammar", "education"]
+  },
+  {
+    id: "rewriter",
+    title: "Rewriter",
+    description: "Rewrite text to improve quality, adjust tone, or change structure while preserving the original intent.",
+    href: "/linguistic/rewriter",
+    category: "Education",
+    tags: ["linguistic", "rewriter", "writing", "language", "education"]
+  },
+  {
+    id: "lesson",
+    title: "Language Lesson",
+    description: "Generate a scaffolded language lesson tuned to your CEFR level, learning focus, and theme.",
+    href: "/linguistic/lesson",
+    category: "Education",
+    tags: ["linguistic", "lesson", "language", "learning", "education"]
+  },
+  {
+    id: "poet-engine",
+    title: "Poet Engine",
+    description: "Explain the 'Soul' of a word using AI-driven poetic philology — etymology, poetry, and metaphor.",
+    href: "/linguistic/poet-engine",
+    category: "Education",
+    tags: ["linguistic", "poetry", "language", "words", "education"]
+  },
+  {
+    id: "language-tester",
+    title: "Language Tester",
+    description: "Generate personalized MCQs, fill-in-the-blank, translation challenges, and coached roleplays at your CEFR level.",
+    href: "/linguistic/language-tester",
+    category: "Education",
+    tags: ["linguistic", "assessment", "language", "quiz", "education"]
+  },
+  {
+    id: "roleplay",
+    title: "Roleplay",
+    description: "Step into a scene with any persona you describe and hold an in-character conversation.",
+    href: "/linguistic/roleplay",
+    category: "Education",
+    tags: ["linguistic", "roleplay", "conversation", "language", "education"]
+  },
+  {
     id: "learning",
     title: "Learning Hub",
     description: "AI-powered explainer tools: quick explanations, A-to-Z tutorials, Feynman simplifications, and more.",
