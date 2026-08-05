@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from tools.charts.schemas import ChartRequest, ChartResponse
 
 logger = logging.getLogger(__name__)
@@ -41,13 +41,7 @@ class ChartService:
     """Business layer wrapping the DSPy Chart.js generation pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.4),
-            cache=False,
-        )
+        self.lm = build_lm(temperature=0.4, cache=False)
 
     def generate_chart(self, data: ChartRequest) -> ChartResponse:
         """
@@ -63,14 +57,14 @@ class ChartService:
             GenerationError: If the DSPy pipeline fails to produce content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                logger.info("Generating Chart.js code via DSPy ChainOfThought")
-                generator = dspy.ChainOfThought(ChartJSGenerator)
-                response = generator(
-                    data_input=data.data_input,
-                    custom_instructions=data.custom_instructions,
-                    previous_code=data.previous_code,
-                )
+            logger.info("Generating Chart.js code via DSPy ChainOfThought")
+            response = run_predictor(
+                ChartJSGenerator,
+                self.lm,
+                data_input=data.data_input,
+                custom_instructions=data.custom_instructions,
+                previous_code=data.previous_code,
+            )
             return ChartResponse(
                 answer_message=response.answer_message,
                 chart_div_code=response.chart_div_code,

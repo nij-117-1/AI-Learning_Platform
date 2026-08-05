@@ -3,7 +3,7 @@ from typing import Dict, List, Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from practice.debate.schemas import (
     ArgumentPoint,
     DebateTurnRequest,
@@ -100,16 +100,7 @@ class DebateService:
     """Business layer wrapping the DSPy debate pipelines."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.6),
-            cache=False,
-        )
-        self.persona_builder = dspy.Predict(PersonaArchitect)
-        self.turn_generator = dspy.ChainOfThought(DebateTurnGenerator)
-        self.judge = dspy.Predict(DebateJudge)
+        self.lm = build_lm(temperature=0.6, cache=False)
 
     @staticmethod
     def _coerce_list(value: object) -> List[str]:
@@ -216,16 +207,17 @@ class DebateService:
             GenerationError: If the persona pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                result = self.persona_builder(
-                    character_archetype=data.archetype,
-                    speech_style=data.style,
-                    rhetorical_intensity=data.intensity,
-                    intellectual_influences=data.influences,
-                    debate_topic=data.topic,
-                    side=data.side,
-                    custom_constraints=data.custom_constraints or "None",
-                )
+            result = run_predictor(
+                PersonaArchitect,
+                self.lm,
+                character_archetype=data.archetype,
+                speech_style=data.style,
+                rhetorical_intensity=data.intensity,
+                intellectual_influences=data.influences,
+                debate_topic=data.topic,
+                side=data.side,
+                custom_constraints=data.custom_constraints or "None",
+            )
             persona = self._build_persona(result)
             logger.info("Created debate persona '%s'", persona.persona_name)
             return PersonaResponse(persona=persona)
@@ -247,16 +239,17 @@ class DebateService:
             GenerationError: If the turn pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                result = self.turn_generator(
-                    system_prompt=data.system_prompt,
-                    debate_topic=data.topic,
-                    debate_context=data.context or "General debate",
-                    chat_history=data.history,
-                    turn_strategy=data.strategy,
-                    external_evidence=data.evidence,
-                    custom_instructions=data.instructions,
-                )
+            result = run_predictor(
+                DebateTurnGenerator,
+                self.lm,
+                system_prompt=data.system_prompt,
+                debate_topic=data.topic,
+                debate_context=data.context or "General debate",
+                chat_history=data.history,
+                turn_strategy=data.strategy,
+                external_evidence=data.evidence,
+                custom_instructions=data.instructions,
+            )
             logger.info("Executed %s turn on topic '%s'", data.strategy, data.topic)
             return DebateTurnResponse(
                 opponent_analysis=result.opponent_analysis,
@@ -284,12 +277,13 @@ class DebateService:
             GenerationError: If the judge pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                result = self.judge(
-                    debate_topic=data.topic,
-                    pro_transcript=data.pro_transcript,
-                    con_transcript=data.con_transcript,
-                )
+            result = run_predictor(
+                DebateJudge,
+                self.lm,
+                debate_topic=data.topic,
+                pro_transcript=data.pro_transcript,
+                con_transcript=data.con_transcript,
+            )
             pro_score = max(0, min(10, self._coerce_int(result.pro_score, default=5)))
             con_score = max(0, min(10, self._coerce_int(result.con_score, default=5)))
             logger.info("Judged debate on topic '%s' (winner=%s)", data.topic, result.winner)

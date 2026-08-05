@@ -8,7 +8,8 @@ from typing import List, Literal
 import dspy
 from PIL import Image
 
-from core.config import master_llm_config as config, settings
+from core.config import settings
+from core.dspy_utils import build_lm, run_predictor
 from tools.ingredients.schemas import IngredientAnalysisResponse
 
 logger = logging.getLogger(__name__)
@@ -51,13 +52,7 @@ class IngredientVisionService:
     def __init__(self) -> None:
         self.storage_dir = Path(settings.INGREDIENTS_STORAGE_DIR)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.1),
-            cache=False,
-        )
+        self.lm = build_lm(temperature=0.1, cache=False)
 
     def check_ingredients(self, image_bytes: bytes, filename: str, manual_text: str) -> IngredientAnalysisResponse:
         """
@@ -152,12 +147,12 @@ class IngredientVisionService:
             image_uri = f"data:image/jpeg;base64,{base64_str}"
             img_obj = dspy.Image(url=image_uri)
 
-            with dspy.context(lm=self.lm):
-                predictor = dspy.ChainOfThought(IngredientsChecker)
-                prediction = predictor(
-                    ingredients_image=img_obj,
-                    manual_text_input=manual_text,
-                )
+            prediction = run_predictor(
+                IngredientsChecker,
+                self.lm,
+                ingredients_image=img_obj,
+                manual_text_input=manual_text,
+            )
 
             return IngredientAnalysisResponse(
                 extracted_ingredients=prediction.extracted_ingredients,

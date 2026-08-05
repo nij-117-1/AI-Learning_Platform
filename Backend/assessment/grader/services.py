@@ -10,7 +10,8 @@ import dspy
 from PIL import Image
 
 from assessment.grader.schemas import GradingPayload, GradingResponse
-from core.config import master_llm_config as config, settings
+from core.config import settings
+from core.dspy_utils import build_lm, run_predictor
 
 logger = logging.getLogger(__name__)
 
@@ -57,12 +58,7 @@ class GraderService:
     """Business layer wrapping the DSPy grading pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.2),
-        )
+        self.lm = build_lm(temperature=0.2)
 
     async def evaluate(
         self,
@@ -95,17 +91,17 @@ class GraderService:
         image_obj = self._to_image(processed_bytes)
 
         try:
-            with dspy.context(lm=self.lm):
-                logger.info("Grading submission for %s (text=%s, image=%s)", username, bool(payload.user_answer_text), image_obj is not None)
-                grader = dspy.ChainOfThought(HybridUserResponseGrader)
-                result = grader(
-                    scenario=payload.scenario,
-                    question_asked=payload.question_asked,
-                    target_objective=payload.target_objective,
-                    expected_level=payload.expected_level,
-                    user_answer_text=payload.user_answer_text,
-                    user_answer_image=image_obj,
-                )
+            logger.info("Grading submission for %s (text=%s, image=%s)", username, bool(payload.user_answer_text), image_obj is not None)
+            result = run_predictor(
+                HybridUserResponseGrader,
+                self.lm,
+                scenario=payload.scenario,
+                question_asked=payload.question_asked,
+                target_objective=payload.target_objective,
+                expected_level=payload.expected_level,
+                user_answer_text=payload.user_answer_text,
+                user_answer_image=image_obj,
+            )
         except Exception as exc:
             logger.error("Grading failed for %s: %s", username, exc, exc_info=True)
             raise GenerationError(str(exc)) from exc

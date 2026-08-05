@@ -3,7 +3,7 @@ import random
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from practice.conceptual_bridge.schemas import (
     AbstractionDepth,
     BridgeRequest,
@@ -52,13 +52,7 @@ class ConceptualBridgeService:
     """Stateless business layer wrapping the DSPy conceptual bridge pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=0.8,
-            cache=False,
-        )
+        self.lm = build_lm(temperature=0.8, cache=False)
 
     @staticmethod
     def _coerce_str(value: object, default: str = "") -> str:
@@ -108,13 +102,14 @@ class ConceptualBridgeService:
             GenerationError: If the generation pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                result = dspy.ChainOfThought(ConceptualBridgeBuilder)(
-                    concept_a=data.concept_a,
-                    concept_b=data.concept_b,
-                    abstraction_depth=data.abstraction_depth,
-                    seed=random.randint(1, 100000),
-                )
+            result = run_predictor(
+                ConceptualBridgeBuilder,
+                self.lm,
+                concept_a=data.concept_a,
+                concept_b=data.concept_b,
+                abstraction_depth=data.abstraction_depth,
+                seed=random.randint(1, 100000),
+            )
             logger.info("Built conceptual bridge between '%s' and '%s'", data.concept_a, data.concept_b)
             return BridgeResponse(
                 structural_analogy=self._coerce_str(result.structural_analogy),

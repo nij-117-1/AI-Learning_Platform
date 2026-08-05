@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from practice.battleground.schemas import (
     BattleChallengeRequest,
     BattleChallengeResponse,
@@ -262,13 +262,7 @@ class BattlegroundService:
     """Stateless business layer wrapping the DSPy battleground pipelines."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=0.4,
-            cache=False,
-        )
+        self.lm = build_lm(temperature=0.4, cache=False)
 
     @staticmethod
     def _as_dict(raw: object) -> Dict[str, Any]:
@@ -375,20 +369,6 @@ class BattlegroundService:
             return value
         return str(value).strip().lower() in ("true", "1", "yes", "y")
 
-    def _predict(self, signature_cls, **kwargs):
-        """
-        Runs a ChainOfThought predictor against the configured LM.
-
-        Args:
-            signature_cls (type): The DSPy signature class.
-            **kwargs: Input fields for the signature.
-
-        Returns:
-            Prediction: The DSPy prediction object.
-        """
-        with dspy.context(lm=self.lm):
-            return dspy.ChainOfThought(signature_cls)(**kwargs)
-
     async def start_battle(self, data: BattleStartRequest) -> BattleStartResponse:
         """
         Initializes a battleground: builds the user profile, generates the
@@ -404,8 +384,9 @@ class BattlegroundService:
             GenerationError: If any pipeline step fails.
         """
         try:
-            user_result = self._predict(
+            user_result = run_predictor(
                 UserProfileGenerator,
+                self.lm,
                 user_name=data.name,
                 user_expertise=data.expertise,
                 user_preferred_style=data.preferred_style,
@@ -414,8 +395,9 @@ class BattlegroundService:
             )
             user_profile = self._as_dict(user_result.user_profile)
 
-            opponent_result = self._predict(
+            opponent_result = run_predictor(
                 OpponentGenerator,
+                self.lm,
                 battleground_topic=data.topic,
                 difficulty=data.difficulty,
                 user_profile=user_profile,
@@ -425,8 +407,9 @@ class BattlegroundService:
             opponent_strategy = self._coerce_str(opponent_result.opponent_strategy)
             first_impression = self._coerce_str(opponent_result.first_impression)
 
-            scenario_result = self._predict(
+            scenario_result = run_predictor(
                 ScenarioGenerator,
+                self.lm,
                 battleground_topic=data.topic,
                 difficulty=data.difficulty,
                 user_profile=user_profile,
@@ -476,8 +459,9 @@ class BattlegroundService:
             GenerationError: If any pipeline step fails.
         """
         try:
-            tactics_result = self._predict(
+            tactics_result = run_predictor(
                 TacticsDecider,
+                self.lm,
                 opponent_profile=data.opponent_profile,
                 battlefield_environment=data.battlefield_environment,
                 user_health=data.user_health,
@@ -496,8 +480,9 @@ class BattlegroundService:
                 f"User HP: {data.user_health} | Opponent HP: {data.opponent_health}"
             )
 
-            challenge_result = self._predict(
+            challenge_result = run_predictor(
                 ChallengeGenerator,
+                self.lm,
                 scenario_context=data.scenario_context,
                 battlefield_environment=data.battlefield_environment,
                 user_profile=data.user_profile,
@@ -540,8 +525,9 @@ class BattlegroundService:
             GenerationError: If the evaluation pipeline fails.
         """
         try:
-            result = self._predict(
+            result = run_predictor(
                 ResponseEvaluator,
+                self.lm,
                 scenario_context=data.scenario_context,
                 battlefield_environment=data.battlefield_environment,
                 evaluation_criteria=data.evaluation_criteria,

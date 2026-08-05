@@ -3,7 +3,7 @@ from typing import Any
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from tools.flexible_writer.schemas import FlexibleWriterRequest, FlexibleWriterResponse
 
 logger = logging.getLogger(__name__)
@@ -36,13 +36,7 @@ class FlexibleWriterService:
     """Stateless business layer wrapping the DSPy flexible writer pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.7),
-            cache=False,
-        )
+        self.lm = build_lm(temperature=0.7, cache=False)
 
     async def transform(self, data: FlexibleWriterRequest) -> FlexibleWriterResponse:
         """
@@ -58,12 +52,13 @@ class FlexibleWriterService:
             GenerationError: If the pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                result = dspy.Predict(FlexibleWriter)(
-                    system_prompt=data.system_prompt,
-                    input_data=data.input_data,
-                    additional_user_input=data.additional_user_input or "",
-                )
+            result = run_predictor(
+                FlexibleWriter,
+                self.lm,
+                system_prompt=data.system_prompt,
+                input_data=data.input_data,
+                additional_user_input=data.additional_user_input or "",
+            )
             logger.info("Flexible writer transformed input for persona '%s'", data.system_prompt[:50])
             return FlexibleWriterResponse(
                 answer_message=str(result.answer_message or ""),

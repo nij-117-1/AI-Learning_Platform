@@ -3,7 +3,7 @@ from typing import Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from tools.diagram.schemas import DiagramRequest, DiagramResponse
 
 logger = logging.getLogger(__name__)
@@ -62,15 +62,7 @@ class DiagramService:
     """Business layer wrapping the DSPy Mermaid/Draw.io generation pipelines."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.4),
-            cache=False,
-        )
-        self.mermaid_generator = dspy.Predict(MermaidGenerator)
-        self.drawio_generator = dspy.Predict(DrawIOCodeGenerator)
+        self.lm = build_lm(temperature=0.4, cache=False)
 
     def generate(self, data: DiagramRequest) -> DiagramResponse:
         """
@@ -86,22 +78,25 @@ class DiagramService:
             GenerationError: If the DSPy pipeline fails to produce content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                logger.info("Generating %s diagram via DSPy", data.format)
-                if data.format == "mermaid":
-                    response = self.mermaid_generator(
-                        user_instruction=data.instruction,
-                        context=data.context,
-                        existing_code=data.existing_code or None,
-                    )
-                elif data.format == "drawio":
-                    response = self.drawio_generator(
-                        user_instruction=data.instruction,
-                        context=data.context,
-                        existing_code=data.existing_code or None,
-                    )
-                else:
-                    raise GenerationError(f"Unsupported format: {data.format}")
+            logger.info("Generating %s diagram via DSPy", data.format)
+            if data.format == "mermaid":
+                response = run_predictor(
+                    MermaidGenerator,
+                    self.lm,
+                    user_instruction=data.instruction,
+                    context=data.context,
+                    existing_code=data.existing_code or None,
+                )
+            elif data.format == "drawio":
+                response = run_predictor(
+                    DrawIOCodeGenerator,
+                    self.lm,
+                    user_instruction=data.instruction,
+                    context=data.context,
+                    existing_code=data.existing_code or None,
+                )
+            else:
+                raise GenerationError(f"Unsupported format: {data.format}")
             return DiagramResponse(
                 message=response.answer_message,
                 code=response.updated_code,

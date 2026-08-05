@@ -3,7 +3,7 @@ from typing import Dict, List, Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from practice.observation_trainer.schemas import (
     DescribeRequest,
     DescribeResponse,
@@ -194,15 +194,7 @@ class ObservationTrainerService:
     """Business layer wrapping the DSPy observation training pipelines."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.3),
-        )
-        self.describer = dspy.Predict(ImageDescriber)
-        self.evaluator = dspy.Predict(ImageObservationEvaluator)
-        self.revealer = dspy.Predict(HiddenDetailsRevealer)
+        self.lm = build_lm(temperature=0.3)
 
     @staticmethod
     def _build_missed_details(raw_items: List[object]) -> List[MissedDetail]:
@@ -246,11 +238,12 @@ class ObservationTrainerService:
             GenerationError: If the vision pipeline fails to describe the image.
         """
         try:
-            with dspy.context(lm=self.lm):
-                result = self.describer(
-                    image=data.image,
-                    scenario_context=data.scenario_context,
-                )
+            result = run_predictor(
+                ImageDescriber,
+                self.lm,
+                image=data.image,
+                scenario_context=data.scenario_context,
+            )
             logger.info("Described image: %s", data.image)
             return DescribeResponse(
                 detailed_description=result.detailed_description,
@@ -275,18 +268,21 @@ class ObservationTrainerService:
             GenerationError: If the evaluation pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                description = self.describer(
-                    image=data.image,
-                    scenario_context=data.context_category,
-                )
-                result = self.evaluator(
-                    image=data.image,
-                    image_description=description.detailed_description,
-                    user_observations=data.user_observations,
-                    training_scenario=data.training_scenario,
-                    context_category=data.context_category,
-                )
+            description = run_predictor(
+                ImageDescriber,
+                self.lm,
+                image=data.image,
+                scenario_context=data.context_category,
+            )
+            result = run_predictor(
+                ImageObservationEvaluator,
+                self.lm,
+                image=data.image,
+                image_description=description.detailed_description,
+                user_observations=data.user_observations,
+                training_scenario=data.training_scenario,
+                context_category=data.context_category,
+            )
             logger.info("Evaluated observations for scenario: %s", data.training_scenario)
             return EvaluateResponse(
                 accuracy_assessment=result.accuracy_assessment,
@@ -316,18 +312,21 @@ class ObservationTrainerService:
             GenerationError: If the reveal pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                description = self.describer(
-                    image=data.image,
-                    scenario_context=None,
-                )
-                result = self.revealer(
-                    image=data.image,
-                    image_description=description.detailed_description,
-                    user_observations=data.user_observations,
-                    training_scenario=data.training_scenario,
-                    training_focus=data.training_focus,
-                )
+            description = run_predictor(
+                ImageDescriber,
+                self.lm,
+                image=data.image,
+                scenario_context=None,
+            )
+            result = run_predictor(
+                HiddenDetailsRevealer,
+                self.lm,
+                image=data.image,
+                image_description=description.detailed_description,
+                user_observations=data.user_observations,
+                training_scenario=data.training_scenario,
+                training_focus=data.training_focus,
+            )
             logger.info("Revealed hidden details for scenario: %s", data.training_scenario)
             return RevealHiddenResponse(
                 missed_details=self._build_missed_details(result.missed_details),
@@ -356,37 +355,42 @@ class ObservationTrainerService:
             GenerationError: If any step of the pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                desc_result = self.describer(
-                    image=data.image,
-                    scenario_context=data.context_category,
-                )
+            desc_result = run_predictor(
+                ImageDescriber,
+                self.lm,
+                image=data.image,
+                scenario_context=data.context_category,
+            )
 
-                eval_result = self.evaluator(
+            eval_result = run_predictor(
+                ImageObservationEvaluator,
+                self.lm,
+                image=data.image,
+                image_description=desc_result.detailed_description,
+                user_observations=data.user_observations,
+                training_scenario=data.training_scenario,
+                context_category=data.context_category,
+            )
+
+            hidden_summary = None
+            if data.reveal_hidden:
+                reveal_result = run_predictor(
+                    HiddenDetailsRevealer,
+                    self.lm,
                     image=data.image,
                     image_description=desc_result.detailed_description,
                     user_observations=data.user_observations,
                     training_scenario=data.training_scenario,
-                    context_category=data.context_category,
+                    training_focus=data.training_focus,
                 )
-
-                hidden_summary = None
-                if data.reveal_hidden:
-                    reveal_result = self.revealer(
-                        image=data.image,
-                        image_description=desc_result.detailed_description,
-                        user_observations=data.user_observations,
-                        training_scenario=data.training_scenario,
-                        training_focus=data.training_focus,
-                    )
-                    hidden_summary = HiddenDetailsSummary(
-                        missed_items=self._build_missed_details(reveal_result.missed_details),
-                        potential_score=reveal_result.observation_score_if_these_noticed,
-                        skill_gap=reveal_result.scenario_skill_gap,
-                        training_tip=reveal_result.training_tip,
-                        practice_exercise=reveal_result.practice_exercise,
-                        encouragement=reveal_result.encouragement,
-                    )
+                hidden_summary = HiddenDetailsSummary(
+                    missed_items=self._build_missed_details(reveal_result.missed_details),
+                    potential_score=reveal_result.observation_score_if_these_noticed,
+                    skill_gap=reveal_result.scenario_skill_gap,
+                    training_tip=reveal_result.training_tip,
+                    practice_exercise=reveal_result.practice_exercise,
+                    encouragement=reveal_result.encouragement,
+                )
 
             logger.info("Completed training run for scenario: %s", data.training_scenario)
             return TrainResponse(

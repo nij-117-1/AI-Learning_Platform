@@ -3,7 +3,7 @@ from typing import Dict, List, Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from practice.negotiation.schemas import (
     AnalyzeMessageRequest,
     AnalyzeMessageResponse,
@@ -187,18 +187,7 @@ class NegotiationService:
     """Stateless business layer orchestrating the DSPy negotiation components."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.4),
-            stop=None,
-            cache=False,
-        )
-        self.scenario_generator = dspy.Predict(ScenarioGenerator)
-        self.opponent = dspy.Predict(OpponentResponse)
-        self.analyzer = dspy.Predict(MessageAnalyzer)
-        self.evaluator = dspy.Predict(FeedbackEvaluator)
+        self.lm = build_lm(temperature=0.4, stop=None, cache=False)
 
     @staticmethod
     def _build_scenario(raw: object) -> NegotiationScenario:
@@ -328,11 +317,12 @@ class NegotiationService:
             GenerationError: If the scenario pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                result = self.scenario_generator(
-                    difficulty=data.difficulty,
-                    domain=data.domain,
-                )
+            result = run_predictor(
+                ScenarioGenerator,
+                self.lm,
+                difficulty=data.difficulty,
+                domain=data.domain,
+            )
             scenario = self._build_scenario(result.scenario)
             logger.info("Generated %s negotiation scenario in domain '%s'", data.difficulty, data.domain)
             return ScenarioResponse(
@@ -357,15 +347,16 @@ class NegotiationService:
             GenerationError: If the opponent pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                result = self.opponent(
-                    scenario_context=data.scenario.model_dump_json(),
-                    opponent_role=data.scenario.opponent_role,
-                    opponent_goal=data.scenario.opponent_goal,
-                    opponent_constraints=data.scenario.opponent_constraints,
-                    conversation_history=self._format_history(data.conversation_history),
-                    user_last_message=data.user_last_message,
-                )
+            result = run_predictor(
+                OpponentResponse,
+                self.lm,
+                scenario_context=data.scenario.model_dump_json(),
+                opponent_role=data.scenario.opponent_role,
+                opponent_goal=data.scenario.opponent_goal,
+                opponent_constraints=data.scenario.opponent_constraints,
+                conversation_history=self._format_history(data.conversation_history),
+                user_last_message=data.user_last_message,
+            )
             logger.info("Opponent turn generated for scenario '%s'", data.scenario.title)
             return OpponentTurnResponse(
                 response=result.response,
@@ -389,11 +380,12 @@ class NegotiationService:
             GenerationError: If the analysis pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                result = self.analyzer(
-                    message=data.message,
-                    scenario_context=data.scenario_context,
-                )
+            result = run_predictor(
+                MessageAnalyzer,
+                self.lm,
+                message=data.message,
+                scenario_context=data.scenario_context,
+            )
             logger.info("Analyzed trainee message (rating=%s)", result.effectiveness_rating)
             return AnalyzeMessageResponse(
                 tactics_used=result.tactics_used,
@@ -419,26 +411,29 @@ class NegotiationService:
             GenerationError: If any pipeline step fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                opponent_result = self.opponent(
+            opponent_result = run_predictor(
+                OpponentResponse,
+                self.lm,
+                scenario_context=data.scenario.model_dump_json(),
+                opponent_role=data.scenario.opponent_role,
+                opponent_goal=data.scenario.opponent_goal,
+                opponent_constraints=data.scenario.opponent_constraints,
+                conversation_history=self._format_history(data.conversation_history),
+                user_last_message=data.user_last_message,
+            )
+            analysis = None
+            if data.analyze_message:
+                analysis_result = run_predictor(
+                    MessageAnalyzer,
+                    self.lm,
+                    message=data.user_last_message,
                     scenario_context=data.scenario.model_dump_json(),
-                    opponent_role=data.scenario.opponent_role,
-                    opponent_goal=data.scenario.opponent_goal,
-                    opponent_constraints=data.scenario.opponent_constraints,
-                    conversation_history=self._format_history(data.conversation_history),
-                    user_last_message=data.user_last_message,
                 )
-                analysis = None
-                if data.analyze_message:
-                    analysis_result = self.analyzer(
-                        message=data.user_last_message,
-                        scenario_context=data.scenario.model_dump_json(),
-                    )
-                    analysis = MessageAnalysis(
-                        tactics_used=analysis_result.tactics_used,
-                        effectiveness_rating=analysis_result.effectiveness_rating,
-                        feedback_snippet=analysis_result.feedback_snippet,
-                    )
+                analysis = MessageAnalysis(
+                    tactics_used=analysis_result.tactics_used,
+                    effectiveness_rating=analysis_result.effectiveness_rating,
+                    feedback_snippet=analysis_result.feedback_snippet,
+                )
             logger.info(
                 "Turn executed for scenario '%s' (analyze=%s)",
                 data.scenario.title,
@@ -467,12 +462,13 @@ class NegotiationService:
             GenerationError: If the evaluation pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                result = self.evaluator(
-                    scenario_context=data.scenario.model_dump_json(),
-                    full_conversation=self._format_history(data.conversation_history),
-                    final_outcome=data.final_outcome,
-                )
+            result = run_predictor(
+                FeedbackEvaluator,
+                self.lm,
+                scenario_context=data.scenario.model_dump_json(),
+                full_conversation=self._format_history(data.conversation_history),
+                final_outcome=data.final_outcome,
+            )
             logger.info("Evaluated session for scenario '%s'", data.scenario.title)
             try:
                 overall_score = int(result.overall_score)

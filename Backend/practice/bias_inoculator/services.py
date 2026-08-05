@@ -4,7 +4,7 @@ from typing import List
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from practice.bias_inoculator.schemas import (
     BiasRequest,
     BiasResponse,
@@ -54,13 +54,7 @@ class BiasInoculatorService:
     _BIAS_CHOICES: tuple = ("anchoring", "availability", "confirmation", "sunk_cost", "framing")
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=0.7,
-            cache=False,
-        )
+        self.lm = build_lm(temperature=0.7, cache=False)
 
     @staticmethod
     def _coerce_str(value: object, default: str = "") -> str:
@@ -127,12 +121,13 @@ class BiasInoculatorService:
         """
         try:
             selected_bias = data.target_bias or random.choice(self._BIAS_CHOICES)
-            with dspy.context(lm=self.lm):
-                result = dspy.ChainOfThought(CognitiveBiasInoculator)(
-                    conversation_history=self._format_history(data.conversation_history),
-                    target_bias=selected_bias,
-                    user_interest=data.user_interest,
-                )
+            result = run_predictor(
+                CognitiveBiasInoculator,
+                self.lm,
+                conversation_history=self._format_history(data.conversation_history),
+                target_bias=selected_bias,
+                user_interest=data.user_interest,
+            )
             logger.info("Generated bias inoculator scenario for bias '%s'", selected_bias)
             return BiasResponse(
                 target_bias=self._pick(result.target_bias, self._BIAS_CHOICES, selected_bias),

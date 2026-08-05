@@ -3,7 +3,7 @@ from typing import List
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from practice.socratic.schemas import (
     ConfidenceLevel,
     SocraticRequest,
@@ -54,13 +54,7 @@ class SocraticService:
     """Stateless business layer wrapping the DSPy socratic challenger pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=0.4,
-            cache=False,
-        )
+        self.lm = build_lm(temperature=0.4, cache=False)
 
     @staticmethod
     def _coerce_str(value: object, default: str = "") -> str:
@@ -107,12 +101,13 @@ class SocraticService:
             GenerationError: If the challenge pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                result = dspy.ChainOfThought(SocraticChallenger)(
-                    conversation_history=self._format_history(data.conversation_history),
-                    user_statement=data.user_statement,
-                    confidence_level=data.confidence_level,
-                )
+            result = run_predictor(
+                SocraticChallenger,
+                self.lm,
+                conversation_history=self._format_history(data.conversation_history),
+                user_statement=data.user_statement,
+                confidence_level=data.confidence_level,
+            )
             logger.info("Generated socratic challenge for statement '%s'", data.user_statement[:50])
             return SocraticResponse(
                 logical_fallacy_check=self._coerce_str(result.logical_fallacy_check) or None,

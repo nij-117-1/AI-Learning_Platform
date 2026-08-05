@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from practice.foresight_trainer.schemas import (
     ChoiceOption,
     Consequences,
@@ -375,30 +375,8 @@ class ForesightService:
     """Stateless business layer orchestrating the DSPy foresight training pipelines."""
 
     def __init__(self) -> None:
-        self.lm_creative = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=0.8,
-            stop=None,
-            cache=False,
-        )
-        self.lm_analytical = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=0.3,
-            stop=None,
-            cache=False,
-        )
-        self.analyzer = dspy.Predict(ContextAnalyzer)
-        self.situation = dspy.Predict(SituationGenerator)
-        self.options = dspy.Predict(OptionDesigner)
-        self.evaluator = dspy.Predict(DecisionEvaluator)
-        self.consequence = dspy.Predict(ConsequenceEngine)
-        self.next_scene = dspy.Predict(NextSceneGenerator)
-        self.insight = dspy.Predict(InsightGenerator)
-        self.tracker = dspy.Predict(ProgressTracker)
+        self.lm_creative = build_lm(temperature=0.8, stop=None, cache=False)
+        self.lm_analytical = build_lm(temperature=0.3, stop=None, cache=False)
 
     @staticmethod
     def _as_dict(raw: object) -> Dict[str, Any]:
@@ -716,32 +694,36 @@ class ForesightService:
             GenerationError: If any pipeline step fails.
         """
         try:
-            with dspy.context(lm=self.lm_analytical):
-                blueprint_result = self.analyzer(
-                    user_context=data.user_context,
-                    main_theme=data.main_theme,
-                    difficulty_level=data.difficulty,
-                )
+            blueprint_result = run_predictor(
+                ContextAnalyzer,
+                self.lm_analytical,
+                user_context=data.user_context,
+                main_theme=data.main_theme,
+                difficulty_level=data.difficulty,
+            )
             blueprint = self._build_blueprint(blueprint_result.scenario_blueprint)
 
-            with dspy.context(lm=self.lm_creative):
-                scene_result = self.situation(
-                    scenario_blueprint=blueprint.model_dump(),
-                    scene_number=1,
-                    previous_context="This is the opening scene.",
-                )
-                scene = self._build_scene(
-                    {
-                        "scene_narrative": scene_result.scene_narrative,
-                        "decision_point": scene_result.decision_point,
-                        "time_pressure": scene_result.time_pressure,
-                    }
-                )
-                options_result = self.options(
-                    decision_point=scene.decision_point,
-                    scene_narrative=scene.scene_narrative,
-                    scenario_blueprint=blueprint.model_dump(),
-                )
+            scene_result = run_predictor(
+                SituationGenerator,
+                self.lm_creative,
+                scenario_blueprint=blueprint.model_dump(),
+                scene_number=1,
+                previous_context="This is the opening scene.",
+            )
+            scene = self._build_scene(
+                {
+                    "scene_narrative": scene_result.scene_narrative,
+                    "decision_point": scene_result.decision_point,
+                    "time_pressure": scene_result.time_pressure,
+                }
+            )
+            options_result = run_predictor(
+                OptionDesigner,
+                self.lm_creative,
+                decision_point=scene.decision_point,
+                scene_narrative=scene.scene_narrative,
+                scenario_blueprint=blueprint.model_dump(),
+            )
 
             options = self._build_options(options_result.options)
             logger.info("Started foresight scenario on theme '%s'", data.main_theme)
@@ -776,43 +758,48 @@ class ForesightService:
             options_raw = [option.model_dump() for option in data.options]
             history_raw = [record.model_dump() for record in data.decision_history]
 
-            with dspy.context(lm=self.lm_analytical):
-                eval_result = self.evaluator(
-                    user_choice=data.choice,
-                    user_reasoning=data.reasoning,
-                    options=options_raw,
-                    scenario_blueprint=blueprint_raw,
-                )
-                evaluation_raw = eval_result.evaluation
-                evaluation = self._build_evaluation(evaluation_raw)
+            eval_result = run_predictor(
+                DecisionEvaluator,
+                self.lm_analytical,
+                user_choice=data.choice,
+                user_reasoning=data.reasoning,
+                options=options_raw,
+                scenario_blueprint=blueprint_raw,
+            )
+            evaluation_raw = eval_result.evaluation
+            evaluation = self._build_evaluation(evaluation_raw)
 
-                insight_result = self.insight(
-                    evaluation=evaluation_raw,
-                    user_reasoning=data.reasoning,
-                    scene_number=data.scene_number,
-                    decision_history=history_raw or None,
-                )
-                insight = self._build_insight(insight_result.insight_report)
+            insight_result = run_predictor(
+                InsightGenerator,
+                self.lm_analytical,
+                evaluation=evaluation_raw,
+                user_reasoning=data.reasoning,
+                scene_number=data.scene_number,
+                decision_history=history_raw or None,
+            )
+            insight = self._build_insight(insight_result.insight_report)
 
-            with dspy.context(lm=self.lm_creative):
-                cons_result = self.consequence(
-                    user_choice=data.choice,
-                    user_reasoning=data.reasoning,
-                    scenario_blueprint=blueprint_raw,
-                    scene_narrative=data.scene_narrative,
-                    evaluation=evaluation_raw,
-                )
-                consequences = self._build_consequences(cons_result.consequences)
+            cons_result = run_predictor(
+                ConsequenceEngine,
+                self.lm_creative,
+                user_choice=data.choice,
+                user_reasoning=data.reasoning,
+                scenario_blueprint=blueprint_raw,
+                scene_narrative=data.scene_narrative,
+                evaluation=evaluation_raw,
+            )
+            consequences = self._build_consequences(cons_result.consequences)
 
             record = self._build_decision_record(data.scene_number, data.choice, evaluation)
             updated_history = data.decision_history + [record]
 
             if data.scene_number >= data.max_scenes:
-                with dspy.context(lm=self.lm_analytical):
-                    progress_result = self.tracker(
-                        decision_history=[item.model_dump() for item in updated_history],
-                        main_theme=data.theme,
-                    )
+                progress_result = run_predictor(
+                    ProgressTracker,
+                    self.lm_analytical,
+                    decision_history=[item.model_dump() for item in updated_history],
+                    main_theme=data.theme,
+                )
                 progress = self._build_progress(progress_result.progress_report)
                 logger.info(
                     "Completed foresight scenario on theme '%s' after %d scenes",
@@ -834,28 +821,31 @@ class ForesightService:
                 f"{consequences.world_state_update}"
             )
 
-            with dspy.context(lm=self.lm_creative):
-                next_result = self.next_scene(
-                    consequences=cons_result.consequences,
-                    scenario_blueprint=blueprint_raw,
-                    scene_number=next_scene_number,
-                    previous_scene_summary=prev_summary,
-                    evaluation=evaluation_raw,
-                )
-                next_scene = self._build_scene(
-                    {
-                        "scene_narrative": next_result.scene_narrative,
-                        "decision_point": next_result.decision_point,
-                        "time_pressure": next_result.time_pressure,
-                        "difficulty_adjustment": next_result.difficulty_adjustment,
-                    },
-                    include_adjustment=True,
-                )
-                next_options_result = self.options(
-                    decision_point=next_scene.decision_point,
-                    scene_narrative=next_scene.scene_narrative,
-                    scenario_blueprint=blueprint_raw,
-                )
+            next_result = run_predictor(
+                NextSceneGenerator,
+                self.lm_creative,
+                consequences=cons_result.consequences,
+                scenario_blueprint=blueprint_raw,
+                scene_number=next_scene_number,
+                previous_scene_summary=prev_summary,
+                evaluation=evaluation_raw,
+            )
+            next_scene = self._build_scene(
+                {
+                    "scene_narrative": next_result.scene_narrative,
+                    "decision_point": next_result.decision_point,
+                    "time_pressure": next_result.time_pressure,
+                    "difficulty_adjustment": next_result.difficulty_adjustment,
+                },
+                include_adjustment=True,
+            )
+            next_options_result = run_predictor(
+                OptionDesigner,
+                self.lm_creative,
+                decision_point=next_scene.decision_point,
+                scene_narrative=next_scene.scene_narrative,
+                scenario_blueprint=blueprint_raw,
+            )
 
             next_options = self._build_options(next_options_result.options)
             logger.info(

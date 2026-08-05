@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from practice.executive_eq.schemas import (
     ChatMessage,
     EvaluateRequest,
@@ -102,29 +102,7 @@ class ExecutiveEQService:
     """Stateless business layer wrapping the DSPy executive EQ pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=0.7,
-            cache=False,
-        )
-
-    def _predict(self, signature_cls, use_cot: bool = False, **kwargs):
-        """
-        Runs a DSPy pipeline against the module LM.
-
-        Args:
-            signature_cls (type): The DSPy signature class.
-            use_cot (bool): Whether to wrap the signature in ChainOfThought.
-            **kwargs: Input fields for the signature.
-
-        Returns:
-            Prediction: The DSPy prediction object.
-        """
-        with dspy.context(lm=self.lm):
-            predictor = dspy.ChainOfThought(signature_cls) if use_cot else dspy.Predict(signature_cls)
-            return predictor(**kwargs)
+        self.lm = build_lm(temperature=0.7, cache=False)
 
     @staticmethod
     def _as_dict(raw: object) -> Dict[str, Any]:
@@ -205,8 +183,9 @@ class ExecutiveEQService:
             GenerationError: If the generation pipeline fails.
         """
         try:
-            result = self._predict(
+            result = run_predictor(
                 HighStakesScenarioGenerator,
+                self.lm,
                 user_role=data.user_role,
                 narrative_arc=data.narrative_arc,
                 learning_focus=data.learning_focus,
@@ -239,8 +218,9 @@ class ExecutiveEQService:
             GenerationError: If the training loop pipeline fails.
         """
         try:
-            result = self._predict(
+            result = run_predictor(
                 HighProfileEQTrainer,
+                self.lm,
                 previous_scenario=data.previous_scenario or "",
                 narrative_arc=data.narrative_arc,
                 chat_history=[{"role": message.role, "content": message.content} for message in data.chat_history],
@@ -274,9 +254,9 @@ class ExecutiveEQService:
             GenerationError: If the evaluation pipeline fails.
         """
         try:
-            result = self._predict(
+            result = run_predictor(
                 EQResponseEvaluator,
-                use_cot=True,
+                self.lm,
                 scenario_context=data.scenario_context,
                 npc_last_statement=data.npc_last_statement,
                 user_response=data.user_response,

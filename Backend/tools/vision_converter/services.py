@@ -8,7 +8,8 @@ from typing import Optional
 import dspy
 from PIL import Image
 
-from core.config import master_llm_config as config, settings
+from core.config import settings
+from core.dspy_utils import build_lm, run_predictor
 from tools.vision_converter.schemas import VisionConversionResponse
 
 logger = logging.getLogger(__name__)
@@ -28,13 +29,7 @@ class VisionService:
     def __init__(self) -> None:
         self.storage_dir = Path(settings.VISION_STORAGE_DIR)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.5),
-            cache=False,
-        )
+        self.lm = build_lm(temperature=0.5, cache=False)
 
     def convert_image(self, image_bytes: bytes, filename: str, instruction: str) -> VisionConversionResponse:
         """
@@ -130,12 +125,12 @@ class VisionService:
             image_uri = f"data:image/jpeg;base64,{base64_str}"
             img_obj = dspy.Image(url=image_uri)
 
-            with dspy.context(lm=self.lm):
-                predictor = dspy.ChainOfThought(ImageToMarkdown)
-                prediction = predictor(
-                    image=img_obj,
-                    user_instruction=instruction,
-                )
+            prediction = run_predictor(
+                ImageToMarkdown,
+                self.lm,
+                image=img_obj,
+                user_instruction=instruction,
+            )
             return prediction.markdown_output or ""
         except Exception as exc:
             logger.error("DSPy vision conversion error: %s", exc, exc_info=True)

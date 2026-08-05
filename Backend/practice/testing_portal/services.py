@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from practice.testing_portal.schemas import (
     AnswerRequest,
     AnswerResponse,
@@ -166,12 +166,7 @@ class TestingPortalService:
     """Business layer wrapping the DSPy testing portal pipelines."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.5),
-        )
+        self.lm = build_lm(temperature=0.5)
 
     @staticmethod
     def _parse_json_past_questions(past_questions: Optional[str]) -> str:
@@ -228,18 +223,18 @@ class TestingPortalService:
         """
         try:
             cleaned_past = self._parse_json_past_questions(data.past_questions)
-            with dspy.context(lm=self.lm):
-                predictor = dspy.ChainOfThought(MCQGenerator)
-                result = predictor(
-                    topic=data.topic,
-                    question_type=data.question_type,
-                    num_questions=data.num_questions,
-                    difficulty_level=data.difficulty_level,
-                    context_setting=data.context_setting,
-                    past_questions=cleaned_past,
-                    custom_instructions=data.custom_instructions,
-                    random_seed=str(uuid.uuid4()),
-                )
+            result = run_predictor(
+                MCQGenerator,
+                self.lm,
+                topic=data.topic,
+                question_type=data.question_type,
+                num_questions=data.num_questions,
+                difficulty_level=data.difficulty_level,
+                context_setting=data.context_setting,
+                past_questions=cleaned_past,
+                custom_instructions=data.custom_instructions,
+                random_seed=str(uuid.uuid4()),
+            )
             logger.info("Generated %d MCQs for topic: %s", len(result.questions), data.topic)
             return MCQResponse(questions=result.questions)
         except Exception as exc:
@@ -261,19 +256,19 @@ class TestingPortalService:
         """
         try:
             cleaned_past = self._trim_text_past_questions(data.past_questions)
-            with dspy.context(lm=self.lm):
-                predictor = dspy.ChainOfThought(TheoreticalQuestionGenerator)
-                result = predictor(
-                    topic=data.topic,
-                    question_type=data.question_type,
-                    source_context=data.source_context,
-                    num_questions=data.num_questions,
-                    difficulty_level=data.difficulty_level,
-                    context_setting=data.context_setting,
-                    past_questions=cleaned_past,
-                    custom_instructions=data.custom_instructions,
-                    random_seed=str(uuid.uuid4()),
-                )
+            result = run_predictor(
+                TheoreticalQuestionGenerator,
+                self.lm,
+                topic=data.topic,
+                question_type=data.question_type,
+                source_context=data.source_context,
+                num_questions=data.num_questions,
+                difficulty_level=data.difficulty_level,
+                context_setting=data.context_setting,
+                past_questions=cleaned_past,
+                custom_instructions=data.custom_instructions,
+                random_seed=str(uuid.uuid4()),
+            )
             logger.info("Generated %d theoretical questions for topic: %s", len(result.questions), data.topic)
             return TheoreticalResponse(questions=result.questions)
         except Exception as exc:
@@ -294,15 +289,15 @@ class TestingPortalService:
             GenerationError: If the DSPy pipeline fails to produce an answer.
         """
         try:
-            with dspy.context(lm=self.lm):
-                predictor = dspy.ChainOfThought(TheoreticalAnswerGenerator)
-                result = predictor(
-                    question=data.question,
-                    context=data.context,
-                    difficulty_level=data.difficulty,
-                    response_format=data.response_format,
-                    custom_instructions=data.custom_instructions,
-                )
+            result = run_predictor(
+                TheoreticalAnswerGenerator,
+                self.lm,
+                question=data.question,
+                context=data.context,
+                difficulty_level=data.difficulty,
+                response_format=data.response_format,
+                custom_instructions=data.custom_instructions,
+            )
             logger.info("Generated SME answer for question: %s", data.question)
             return AnswerResponse(
                 answer_text=result.answer_text,
@@ -326,13 +321,13 @@ class TestingPortalService:
             GenerationError: If the DSPy pipeline fails to analyze the question.
         """
         try:
-            with dspy.context(lm=self.lm):
-                predictor = dspy.ChainOfThought(MCQDetailedAnswerGenerator)
-                result = predictor(
-                    question_text=data.question,
-                    options=data.options,
-                    context_setting=data.context,
-                )
+            result = run_predictor(
+                MCQDetailedAnswerGenerator,
+                self.lm,
+                question_text=data.question,
+                options=data.options,
+                context_setting=data.context,
+            )
             logger.info("Solved MCQ: %s", data.question)
             return MCQSolverResponse(
                 correct_option=result.correct_option,

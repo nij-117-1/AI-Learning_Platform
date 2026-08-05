@@ -3,7 +3,7 @@ from typing import List, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from tools.creative_assets.schemas import CreativeAssetRequest, CreativeAssetResponse, CreativeSuggestion
 
 logger = logging.getLogger(__name__)
@@ -42,13 +42,7 @@ class CreativeAssetService:
     """Business layer wrapping the DSPy creative asset generation pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.4),
-            cache=False,
-        )
+        self.lm = build_lm(temperature=0.4, cache=False)
 
     def generate(self, data: CreativeAssetRequest) -> CreativeAssetResponse:
         """
@@ -64,15 +58,15 @@ class CreativeAssetService:
             GenerationError: If the DSPy pipeline fails to produce content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                generator = dspy.Predict(CreativeAssetGenerator)
-                result = generator(
-                    task_type=data.task_type,
-                    user_query=data.user_query,
-                    context=data.context,
-                    reference_examples=data.reference_examples,
-                    number_of_suggestions=data.number_of_suggestions,
-                )
+            result = run_predictor(
+                CreativeAssetGenerator,
+                self.lm,
+                task_type=data.task_type,
+                user_query=data.user_query,
+                context=data.context,
+                reference_examples=data.reference_examples,
+                number_of_suggestions=data.number_of_suggestions,
+            )
             suggestions = [CreativeSuggestion(**item) for item in result.suggestions]
             return CreativeAssetResponse(suggestions=suggestions)
         except Exception as exc:

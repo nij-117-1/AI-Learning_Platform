@@ -3,7 +3,7 @@ from typing import Dict, List, Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from practice.guess_game.schemas import (
     CoachRequest,
     CoachResponse,
@@ -127,16 +127,7 @@ class GuessGameService:
     """Stateless business layer orchestrating the DSPy guessing game components."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.4),
-        )
-        self.setup = dspy.Predict(GameSetup)
-        self.hint_provider = dspy.Predict(HintProvider)
-        self.evaluator = dspy.Predict(GuessEvaluator)
-        self.guide = dspy.Predict(FailGuide)
+        self.lm = build_lm(temperature=0.4)
 
     async def start_game(self, data: GameStartRequest) -> GameStartResponse:
         """
@@ -155,12 +146,13 @@ class GuessGameService:
             GenerationError: If the setup pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                response = self.setup(
-                    category=data.category,
-                    difficulty=data.difficulty,
-                    vocabulary_theme=data.vocabulary_theme or "",
-                )
+            response = run_predictor(
+                GameSetup,
+                self.lm,
+                category=data.category,
+                difficulty=data.difficulty,
+                vocabulary_theme=data.vocabulary_theme or "",
+            )
             logger.info("Set up new %s %s game", data.difficulty, data.category)
             return GameStartResponse(
                 mystery_item=response.mystery_item,
@@ -187,13 +179,14 @@ class GuessGameService:
             GenerationError: If the hint pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                response = self.hint_provider(
-                    mystery_item=data.mystery_item,
-                    category=data.category,
-                    previous_hints=data.previous_hints,
-                    hint_number=len(data.previous_hints) + 1,
-                )
+            response = run_predictor(
+                HintProvider,
+                self.lm,
+                mystery_item=data.mystery_item,
+                category=data.category,
+                previous_hints=data.previous_hints,
+                hint_number=len(data.previous_hints) + 1,
+            )
             hints_used = data.previous_hints + [response.new_hint]
             logger.info("Generated hint %d", len(hints_used))
             return HintResponse(
@@ -219,13 +212,14 @@ class GuessGameService:
             GenerationError: If the evaluation pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                response = self.evaluator(
-                    mystery_item=data.mystery_item,
-                    category=data.category,
-                    user_guess=data.guess,
-                    difficulty=data.difficulty,
-                )
+            response = run_predictor(
+                GuessEvaluator,
+                self.lm,
+                mystery_item=data.mystery_item,
+                category=data.category,
+                user_guess=data.guess,
+                difficulty=data.difficulty,
+            )
             logger.info(
                 "Evaluated guess (correct=%s, closeness=%s)",
                 response.is_correct,
@@ -255,13 +249,14 @@ class GuessGameService:
             GenerationError: If the coaching pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                response = self.guide(
-                    mystery_item=data.mystery_item,
-                    category=data.category,
-                    failed_guesses=data.failed_guesses,
-                    hint_number=data.hint_number,
-                )
+            response = run_predictor(
+                FailGuide,
+                self.lm,
+                mystery_item=data.mystery_item,
+                category=data.category,
+                failed_guesses=data.failed_guesses,
+                hint_number=data.hint_number,
+            )
             logger.info("Coaching provided at hint stage %d", data.hint_number)
             return CoachResponse(
                 coaching=response.coaching_message,

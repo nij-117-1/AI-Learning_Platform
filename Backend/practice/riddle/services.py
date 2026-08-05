@@ -4,7 +4,7 @@ from typing import Dict
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from practice.riddle.schemas import (
     CognitiveDomain,
     DifficultyLevel,
@@ -59,30 +59,10 @@ class RiddleService:
     """Stateless business layer wrapping the DSPy riddle pipelines."""
 
     def __init__(self) -> None:
-        self.lms: Dict[float, dspy.LM] = {}
-        for temperature in (0.7, 0.2):
-            self.lms[temperature] = dspy.LM(
-                model=f"openai/{config['model_name']}",
-                api_key=config['api_key'],
-                api_base=config['api_base'],
-                temperature=temperature,
-                cache=False,
-            )
-
-    def _predict(self, signature_cls, temperature: float, **kwargs):
-        """
-        Runs a Predict pipeline against the LM configured at the given temperature.
-
-        Args:
-            signature_cls (type): The DSPy signature class.
-            temperature (float): The sampling temperature for this pipeline.
-            **kwargs: Input fields for the signature.
-
-        Returns:
-            Prediction: The DSPy prediction object.
-        """
-        with dspy.context(lm=self.lms[temperature]):
-            return dspy.Predict(signature_cls)(**kwargs)
+        self.lms: Dict[float, dspy.LM] = {
+            temperature: build_lm(temperature=temperature, cache=False)
+            for temperature in (0.7, 0.2)
+        }
 
     @staticmethod
     def _coerce_str(value: object, default: str = "") -> str:
@@ -129,9 +109,9 @@ class RiddleService:
             GenerationError: If the generation pipeline fails.
         """
         try:
-            result = self._predict(
+            result = run_predictor(
                 AdaptiveRiddleGenerator,
-                temperature=0.7,
+                self.lms[0.7],
                 field_of_interest=data.field_of_interest,
                 target_domain=data.target_domain,
                 difficulty_level=data.difficulty_level,
@@ -161,9 +141,9 @@ class RiddleService:
             GenerationError: If the evaluation pipeline fails.
         """
         try:
-            result = self._predict(
+            result = run_predictor(
                 RiddleEvaluator,
-                temperature=0.2,
+                self.lms[0.2],
                 riddle_text=data.riddle_text,
                 solution=data.solution,
                 user_answer=data.user_answer,

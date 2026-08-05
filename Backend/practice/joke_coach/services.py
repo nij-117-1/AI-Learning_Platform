@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from practice.joke_coach.schemas import (
     ClassifyJokeRequest,
     ClassifyJokeResponse,
@@ -163,30 +163,10 @@ class JokeCoachService:
     """Stateless business layer wrapping the DSPy joke practice pipelines."""
 
     def __init__(self) -> None:
-        self.lms: Dict[float, dspy.LM] = {}
-        for temperature in (0.8, 0.6, 0.5, 0.4, 0.3, 0.2):
-            self.lms[temperature] = dspy.LM(
-                model=f"openai/{config['model_name']}",
-                api_key=config['api_key'],
-                api_base=config['api_base'],
-                temperature=temperature,
-                cache=False,
-            )
-
-    def _predict(self, signature_cls, temperature: float, **kwargs):
-        """
-        Runs a Predict pipeline against the LM configured at the given temperature.
-
-        Args:
-            signature_cls (type): The DSPy signature class.
-            temperature (float): The sampling temperature for this pipeline.
-            **kwargs: Input fields for the signature.
-
-        Returns:
-            Prediction: The DSPy prediction object.
-        """
-        with dspy.context(lm=self.lms[temperature]):
-            return dspy.Predict(signature_cls)(**kwargs)
+        self.lms: Dict[float, dspy.LM] = {
+            temperature: build_lm(temperature=temperature, cache=False)
+            for temperature in (0.8, 0.6, 0.5, 0.4, 0.3, 0.2)
+        }
 
     @staticmethod
     def _as_dict(raw: object) -> Dict[str, Any]:
@@ -316,9 +296,9 @@ class JokeCoachService:
             GenerationError: If the generation pipeline fails.
         """
         try:
-            result = self._predict(
+            result = run_predictor(
                 JokeGenerator,
-                temperature=0.8,
+                self.lms[0.8],
                 topic=data.topic,
                 joke_style=data.joke_style,
                 audience=data.audience,
@@ -349,9 +329,9 @@ class JokeCoachService:
             GenerationError: If the evaluation pipeline fails.
         """
         try:
-            result = self._predict(
+            result = run_predictor(
                 JokeEvaluator,
-                temperature=0.3,
+                self.lms[0.3],
                 joke=data.joke,
                 intended_audience=data.intended_audience,
                 context=data.context or "",
@@ -390,9 +370,9 @@ class JokeCoachService:
             GenerationError: If the rewrite pipeline fails.
         """
         try:
-            result = self._predict(
+            result = run_predictor(
                 JokeRewriter,
-                temperature=0.6,
+                self.lms[0.6],
                 original_joke=data.original_joke,
                 improvement_goal=data.improvement_goal,
                 target_audience=data.target_audience,
@@ -423,9 +403,9 @@ class JokeCoachService:
             GenerationError: If the classification pipeline fails.
         """
         try:
-            result = self._predict(
+            result = run_predictor(
                 JokeClassifier,
-                temperature=0.2,
+                self.lms[0.2],
                 joke=data.joke,
             )
             logger.info("Classified a joke")
@@ -463,9 +443,9 @@ class JokeCoachService:
             GenerationError: If the coaching pipeline fails.
         """
         try:
-            result = self._predict(
+            result = run_predictor(
                 PracticeCoach,
-                temperature=0.5,
+                self.lms[0.5],
                 current_skill_level=data.current_skill_level,
                 practice_focus=data.practice_focus,
                 user_joke=data.user_joke or "",
@@ -498,9 +478,9 @@ class JokeCoachService:
             GenerationError: If the simulation pipeline fails.
         """
         try:
-            result = self._predict(
+            result = run_predictor(
                 CrowdResponseSimulator,
-                temperature=0.4,
+                self.lms[0.4],
                 joke=data.joke,
                 venue_type=data.venue_type,
                 audience_demographic=data.audience_demographic,

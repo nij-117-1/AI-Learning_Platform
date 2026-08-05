@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from tools.social_posts.schemas import PostSuggestion, SocialPostRequest, SocialPostResponse
 
 logger = logging.getLogger(__name__)
@@ -44,13 +44,7 @@ class SocialPostService:
     """Business layer wrapping the DSPy social media post generation pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.7),
-            cache=False,
-        )
+        self.lm = build_lm(temperature=0.7, cache=False)
 
     def generate(self, data: SocialPostRequest) -> SocialPostResponse:
         """
@@ -66,16 +60,16 @@ class SocialPostService:
             GenerationError: If the DSPy pipeline fails to produce content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                generator = dspy.Predict(PostGenerator)
-                response = generator(
-                    system_prompt=data.system_prompt,
-                    platform=data.platform,
-                    user_query=data.user_query,
-                    chat_history=data.chat_history,
-                    liked_post_examples=data.liked_post_examples,
-                    num_suggestions=data.num_suggestions,
-                )
+            response = run_predictor(
+                PostGenerator,
+                self.lm,
+                system_prompt=data.system_prompt,
+                platform=data.platform,
+                user_query=data.user_query,
+                chat_history=data.chat_history,
+                liked_post_examples=data.liked_post_examples,
+                num_suggestions=data.num_suggestions,
+            )
             post_suggestions = [PostSuggestion(**post) for post in response.post_suggestions]
             return SocialPostResponse(
                 user_message=response.user_message,

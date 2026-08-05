@@ -5,7 +5,7 @@ from typing import List, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from tools.prompt_generator.schemas import PersonaCreate, PersonaResponse
 
 logger = logging.getLogger(__name__)
@@ -40,14 +40,7 @@ class PersonaManager:
     """Business layer wrapping the DSPy persona generation pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.5),
-            cache=False,
-        )
-        self.generator = dspy.ChainOfThought(GeneralPersonaGenerator)
+        self.lm = build_lm(temperature=0.5, cache=False)
 
     def generate(self, data: PersonaCreate) -> PersonaResponse:
         """
@@ -66,15 +59,16 @@ class PersonaManager:
         exec_seed = data.seed or "".join(random.choices(string.ascii_letters + string.digits, k=8))
         logger.info("Generating persona. Scenario: %s | Seed: %s", data.scenario, exec_seed)
         try:
-            with dspy.context(lm=self.lm):
-                prediction = self.generator(
-                    scenario=data.scenario,
-                    context=data.context,
-                    past_prompt=data.past_prompt,
-                    seed=exec_seed,
-                    user_instructions=data.user_instructions,
-                    reference_samples=data.reference_samples,
-                )
+            prediction = run_predictor(
+                GeneralPersonaGenerator,
+                self.lm,
+                scenario=data.scenario,
+                context=data.context,
+                past_prompt=data.past_prompt,
+                seed=exec_seed,
+                user_instructions=data.user_instructions,
+                reference_samples=data.reference_samples,
+            )
             return PersonaResponse(
                 persona_name=prediction.persona_name,
                 generated_persona_system_prompt=prediction.generated_persona_system_prompt,

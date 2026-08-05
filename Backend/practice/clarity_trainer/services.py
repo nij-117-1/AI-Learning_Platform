@@ -3,7 +3,7 @@ from typing import List, Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from practice.clarity_trainer.schemas import (
     BetterVersion,
     CoachFeedback,
@@ -261,19 +261,7 @@ class ClarityTrainerService:
     """Stateless business layer orchestrating the DSPy clarity training components."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.4),
-            stop=None,
-            cache=False,
-        )
-        self.scenario_generator = dspy.Predict(ScenarioGenerator)
-        self.analyzer = dspy.Predict(MessageAnalyzer)
-        self.coach = dspy.Predict(CriticCoach)
-        self.rewriter = dspy.Predict(ConciseRewriter)
-        self.ideal_generator = dspy.Predict(IdealResponseGenerator)
+        self.lm = build_lm(temperature=0.4, stop=None, cache=False)
 
     @staticmethod
     def _coerce_list(value: object) -> List[str]:
@@ -479,12 +467,13 @@ class ClarityTrainerService:
             GenerationError: If the scenario pipeline fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                result = self.scenario_generator(
-                    difficulty=data.difficulty,
-                    category=data.category,
-                    user_context=data.user_context or "",
-                )
+            result = run_predictor(
+                ScenarioGenerator,
+                self.lm,
+                difficulty=data.difficulty,
+                category=data.category,
+                user_context=data.user_context or "",
+            )
             scenario = self._build_scenario(result)
             logger.info(
                 "Generated '%s' communication scenario (difficulty=%s)",
@@ -511,48 +500,55 @@ class ClarityTrainerService:
             GenerationError: If any pipeline step fails.
         """
         try:
-            with dspy.context(lm=self.lm):
-                analysis = self.analyzer(
-                    scenario_title=data.scenario.title,
-                    situation=data.scenario.situation,
-                    your_goal=data.scenario.goal,
-                    user_response=data.user_response,
-                )
+            analysis = run_predictor(
+                MessageAnalyzer,
+                self.lm,
+                scenario_title=data.scenario.title,
+                situation=data.scenario.situation,
+                your_goal=data.scenario.goal,
+                user_response=data.user_response,
+            )
 
-                analysis_summary = (
-                    f"Verbosity: {analysis.verbosity_level}, "
-                    f"Clarity: {analysis.clarity_score}, "
-                    f"Words: {analysis.word_count}, "
-                    f"Goal Achievement: {analysis.goal_achievement * 100:.0f}%, "
-                    f"Tone Fit: {analysis.tone_appropriateness * 100:.0f}%, "
-                    f"Fillers: {', '.join(analysis.filler_words) or 'none'}, "
-                    f"Core message: '{analysis.core_message}'. "
-                    f"Context fit: {analysis.scenario_fit_note}"
-                )
+            analysis_summary = (
+                f"Verbosity: {analysis.verbosity_level}, "
+                f"Clarity: {analysis.clarity_score}, "
+                f"Words: {analysis.word_count}, "
+                f"Goal Achievement: {analysis.goal_achievement * 100:.0f}%, "
+                f"Tone Fit: {analysis.tone_appropriateness * 100:.0f}%, "
+                f"Fillers: {', '.join(analysis.filler_words) or 'none'}, "
+                f"Core message: '{analysis.core_message}'. "
+                f"Context fit: {analysis.scenario_fit_note}"
+            )
 
-                feedback = self.coach(
-                    scenario_title=data.scenario.title,
-                    situation=data.scenario.situation,
-                    user_response=data.user_response,
-                    analysis_summary=analysis_summary,
-                )
+            feedback = run_predictor(
+                CriticCoach,
+                self.lm,
+                scenario_title=data.scenario.title,
+                situation=data.scenario.situation,
+                user_response=data.user_response,
+                analysis_summary=analysis_summary,
+            )
 
-                scenario_context = (
-                    f"Situation: {data.scenario.situation}. "
-                    f"Goal: {data.scenario.goal}."
-                )
-                rewrite = self.rewriter(
-                    scenario_context=scenario_context,
-                    user_response=data.user_response,
-                    core_message=analysis.core_message,
-                )
+            scenario_context = (
+                f"Situation: {data.scenario.situation}. "
+                f"Goal: {data.scenario.goal}."
+            )
+            rewrite = run_predictor(
+                ConciseRewriter,
+                self.lm,
+                scenario_context=scenario_context,
+                user_response=data.user_response,
+                core_message=analysis.core_message,
+            )
 
-                ideal = self.ideal_generator(
-                    scenario_title=data.scenario.title,
-                    situation=data.scenario.situation,
-                    your_goal=data.scenario.goal,
-                    constraints=data.scenario.constraints,
-                )
+            ideal = run_predictor(
+                IdealResponseGenerator,
+                self.lm,
+                scenario_title=data.scenario.title,
+                situation=data.scenario.situation,
+                your_goal=data.scenario.goal,
+                constraints=data.scenario.constraints,
+            )
 
             logger.info("Evaluated response for scenario '%s'", data.scenario.title)
             return EvaluateResponse(

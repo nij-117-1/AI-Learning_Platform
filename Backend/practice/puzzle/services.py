@@ -3,7 +3,7 @@ import uuid
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from practice.puzzle.schemas import (
     CognitiveDomain,
     DifficultyLevel,
@@ -84,27 +84,7 @@ class PuzzleService:
     """Stateless business layer wrapping the DSPy puzzle pipelines."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=0.7,
-            cache=False,
-        )
-
-    def _predict(self, signature_cls, **kwargs):
-        """
-        Runs a ChainOfThought pipeline against the module LM.
-
-        Args:
-            signature_cls (type): The DSPy signature class.
-            **kwargs: Input fields for the signature.
-
-        Returns:
-            Prediction: The DSPy prediction object.
-        """
-        with dspy.context(lm=self.lm):
-            return dspy.ChainOfThought(signature_cls)(**kwargs)
+        self.lm = build_lm(temperature=0.7, cache=False)
 
     @staticmethod
     def _coerce_str(value: object, default: str = "") -> str:
@@ -169,8 +149,9 @@ class PuzzleService:
             GenerationError: If the generation pipeline fails.
         """
         try:
-            result = self._predict(
+            result = run_predictor(
                 AdaptivePuzzleGenerator,
+                self.lm,
                 field_of_interest=data.field_of_interest,
                 puzzle_type=data.puzzle_type,
                 target_domain=data.target_domain,
@@ -202,8 +183,9 @@ class PuzzleService:
             GenerationError: If the evaluation pipeline fails.
         """
         try:
-            result = self._predict(
+            result = run_predictor(
                 PuzzleEvaluator,
+                self.lm,
                 puzzle_context=data.puzzle_context,
                 puzzle_type=data.puzzle_type,
                 official_solution=data.official_solution,
