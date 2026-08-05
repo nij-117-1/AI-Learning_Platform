@@ -1,9 +1,9 @@
 // src/features/practice/components/PracticeSidebar.tsx
 /**
- * Left navigation for the Practice area. Lists the Testing Portal and
- * Performance Grader from their registries and highlights the active route.
- * Collapses to an icon rail on desktop and a drawer on mobile via the shadcn
- * Sidebar primitives.
+ * Left navigation for the Practice area. Lists the Testing Portal, Performance
+ * Grader and the training sub-apps from their registries, grouped by category,
+ * and highlights the active route. Collapses to an icon rail on desktop and a
+ * drawer on mobile via the shadcn Sidebar primitives.
  */
 "use client";
 
@@ -27,6 +27,9 @@ import { Dumbbell } from "lucide-react";
 import type { LearningTool } from "@/features/learning/lib/learning-tools";
 import { testingPortalTools } from "@/features/practice/lib/testing-portal-tools";
 import { graderTools } from "@/features/practice/lib/grader-tools";
+import { reasoningTools } from "@/features/practice/lib/reasoning-tools";
+import { communicationTools } from "@/features/practice/lib/communication-tools";
+import { simulationTools } from "@/features/practice/lib/simulation-tools";
 
 function ToolGroup({ label, tools, pathname }: { label: string; tools: LearningTool[]; pathname: string }) {
   return (
@@ -70,6 +73,9 @@ export function PracticeSidebar() {
       <SidebarContent>
         <ToolGroup label="Assessment" tools={testingPortalTools} pathname={pathname} />
         <ToolGroup label="Feedback" tools={graderTools} pathname={pathname} />
+        <ToolGroup label="Reasoning & Logic" tools={reasoningTools} pathname={pathname} />
+        <ToolGroup label="Communication & EQ" tools={communicationTools} pathname={pathname} />
+        <ToolGroup label="Simulations" tools={simulationTools} pathname={pathname} />
       </SidebarContent>
       <SidebarRail />
     </Sidebar>

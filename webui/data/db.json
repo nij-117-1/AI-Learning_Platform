@@ -323,6 +323,202 @@
     ]
   },
   {
+    "id": "bias-inoculator",
+    "title": "Cognitive Bias Inoculator",
+    "description": "Train against cognitive biases with stealthy System 1 vs System 2 scenarios.",
+    "href": "/practice/bias-inoculator",
+    "category": "Practice",
+    "tags": [
+      "practice",
+      "bias",
+      "reasoning",
+      "psychology",
+      "education"
+    ]
+  },
+  {
+    "id": "conceptual-bridge",
+    "title": "Conceptual Bridge Builder",
+    "description": "Connect two seemingly unrelated concepts through deep structural analogies.",
+    "href": "/practice/conceptual-bridge",
+    "category": "Practice",
+    "tags": [
+      "practice",
+      "analogy",
+      "reasoning",
+      "learning",
+      "education"
+    ]
+  },
+  {
+    "id": "puzzle",
+    "title": "Puzzle Generator",
+    "description": "Personalized cognitive puzzles — riddles, logic grids, sequences, wordplay, and ciphers.",
+    "href": "/practice/puzzle",
+    "category": "Practice",
+    "tags": [
+      "practice",
+      "puzzle",
+      "logic",
+      "reasoning",
+      "education"
+    ]
+  },
+  {
+    "id": "riddle",
+    "title": "Riddle Generator",
+    "description": "Adaptive riddles tuned to your topic and cognitive domain, with feedback on every answer.",
+    "href": "/practice/riddle",
+    "category": "Practice",
+    "tags": [
+      "practice",
+      "riddle",
+      "brain-teaser",
+      "reasoning",
+      "education"
+    ]
+  },
+  {
+    "id": "socratic",
+    "title": "Socratic Challenger",
+    "description": "Stress-test your opinions with falsification questions, edge cases, and logical fallacy checks.",
+    "href": "/practice/socratic",
+    "category": "Practice",
+    "tags": [
+      "practice",
+      "socratic",
+      "logic",
+      "philosophy",
+      "education"
+    ]
+  },
+  {
+    "id": "debate",
+    "title": "Debate Engine",
+    "description": "Build a debate persona, trade arguments with it, and get a judge's verdict.",
+    "href": "/practice/debate",
+    "category": "Practice",
+    "tags": [
+      "practice",
+      "debate",
+      "argumentation",
+      "rhetoric",
+      "education"
+    ]
+  },
+  {
+    "id": "clarity-trainer",
+    "title": "Clarity Trainer",
+    "description": "Practice crisp communication on real scenarios and get verbosity, clarity, and rewrite feedback.",
+    "href": "/practice/clarity-trainer",
+    "category": "Practice",
+    "tags": [
+      "practice",
+      "communication",
+      "writing",
+      "clarity",
+      "education"
+    ]
+  },
+  {
+    "id": "executive-eq",
+    "title": "Executive EQ Trainer",
+    "description": "Handle high-stakes executive meetings with NPCs, reading subtext and managing status.",
+    "href": "/practice/executive-eq",
+    "category": "Practice",
+    "tags": [
+      "practice",
+      "eq",
+      "leadership",
+      "communication",
+      "education"
+    ]
+  },
+  {
+    "id": "negotiation",
+    "title": "Negotiation Practice",
+    "description": "Bargain with an AI opponent that tracks its internal position, and get tactic-by-tactic feedback.",
+    "href": "/practice/negotiation",
+    "category": "Practice",
+    "tags": [
+      "practice",
+      "negotiation",
+      "communication",
+      "strategy",
+      "education"
+    ]
+  },
+  {
+    "id": "joke-coach",
+    "title": "Joke Coach",
+    "description": "Generate, evaluate, rewrite, classify, and practice jokes with crowd simulation feedback.",
+    "href": "/practice/joke-coach",
+    "category": "Practice",
+    "tags": [
+      "practice",
+      "comedy",
+      "writing",
+      "jokes",
+      "education"
+    ]
+  },
+  {
+    "id": "battleground",
+    "title": "Battleground Simulator",
+    "description": "Fight a strategic battle of wits against an AI opponent across rounds with HP and resources.",
+    "href": "/practice/battleground",
+    "category": "Practice",
+    "tags": [
+      "practice",
+      "strategy",
+      "simulation",
+      "game",
+      "education"
+    ]
+  },
+  {
+    "id": "foresight-trainer",
+    "title": "Foresight Trainer",
+    "description": "Step into immersive decision scenarios, make consequential choices, and grow your strategic thinking.",
+    "href": "/practice/foresight-trainer",
+    "category": "Practice",
+    "tags": [
+      "practice",
+      "foresight",
+      "decision",
+      "strategy",
+      "education"
+    ]
+  },
+  {
+    "id": "guess-game",
+    "title": "Guess Game",
+    "description": "Guess a hidden mystery item using increasingly revealing hints, with an AI coach on your side.",
+    "href": "/practice/guess-game",
+    "category": "Practice",
+    "tags": [
+      "practice",
+      "game",
+      "guessing",
+      "trivia",
+      "education"
+    ]
+  },
+  {
+    "id": "observation-trainer",
+    "title": "Observation Trainer",
+    "description": "Upload an image, report what you notice, and get scored on accuracy, relevance, and missed details.",
+    "href": "/practice/observation-trainer",
+    "category": "Practice",
+    "tags": [
+      "practice",
+      "observation",
+      "vision",
+      "training",
+      "education"
+    ]
+  },
+  {
     "id": "learning",
     "title": "Learning Hub",
     "description": "AI-powered explainer tools: quick explanations, A-to-Z tutorials, Feynman simplifications, and more.",
