@@ -5,7 +5,8 @@ from typing import List, Optional
 import dspy
 import yaml
 
-from core.config import master_llm_config as config, settings
+from core.config import settings
+from core.dspy_utils import build_lm, run_predictor
 from learning.tutor.models import PromptFile
 from learning.tutor.schemas import PromptCreateUpdate, TutorRequest, TutorResponse
 
@@ -55,13 +56,7 @@ class TutorService:
     """Business layer wrapping the DSPy adaptive tutoring pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.1),
-        )
-        self.tutor_engine = dspy.ChainOfThought(AdaptiveTutorSignature)
+        self.lm = build_lm(temperature=0.1)
 
     async def get_adaptive_response(self, data: TutorRequest) -> TutorResponse:
         """
@@ -80,16 +75,17 @@ class TutorService:
             history_dicts = [{"role": m.role, "content": m.content} for m in data.chat_history[-10:]]
             logger.info("Processing tutor request for level: %s", data.student_level)
 
-            with dspy.context(lm=self.lm):
-                prediction = self.tutor_engine(
-                    user_query=data.user_query,
-                    system_prompt=data.system_prompt,
-                    student_level=data.student_level,
-                    learning_style=data.learning_style,
-                    current_scenario=data.current_scenario,
-                    last_topic_taught=data.last_topic_taught,
-                    chat_history=history_dicts,
-                )
+            prediction = run_predictor(
+                AdaptiveTutorSignature,
+                self.lm,
+                user_query=data.user_query,
+                system_prompt=data.system_prompt,
+                student_level=data.student_level,
+                learning_style=data.learning_style,
+                current_scenario=data.current_scenario,
+                last_topic_taught=data.last_topic_taught,
+                chat_history=history_dicts,
+            )
 
             return TutorResponse(
                 adapted_explanation=prediction.adapted_explanation,

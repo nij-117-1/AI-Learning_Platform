@@ -5,7 +5,8 @@ from typing import Dict, List, Optional
 import dspy
 import yaml
 
-from core.config import master_llm_config as config, settings
+from core.config import settings
+from core.dspy_utils import build_lm, run_predictor
 from linguistic.roleplay_module.schemas import RoleplayRecord, RoleplayRequest
 
 logger = logging.getLogger(__name__)
@@ -49,13 +50,7 @@ class RoleplayService:
     """Business layer wrapping the DSPy roleplay chat pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.7),
-            cache=False,
-        )
+        self.lm = build_lm(cache=False)
 
     def generate_response(self, data: RoleplayRequest, persona_prompt: Optional[str] = None) -> str:
         """
@@ -72,17 +67,17 @@ class RoleplayService:
             GenerationError: If the DSPy pipeline fails to produce content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                predictor = dspy.ChainOfThought(RoleplayChatbot)
-                history_dicts = [message.model_dump() for message in data.history]
-                prediction = predictor(
-                    roleplay_system_prompt=persona_prompt or data.system_prompt,
-                    chat_history=history_dicts,
-                    current_user_message=data.message,
-                    language=data.language,
-                    seed_uuid=data.seed,
-                    additional_instructions=data.additional_instructions,
-                )
+            history_dicts = [message.model_dump() for message in data.history]
+            prediction = run_predictor(
+                RoleplayChatbot,
+                self.lm,
+                roleplay_system_prompt=persona_prompt or data.system_prompt,
+                chat_history=history_dicts,
+                current_user_message=data.message,
+                language=data.language,
+                seed_uuid=data.seed,
+                additional_instructions=data.additional_instructions,
+            )
             return prediction.response_message
         except Exception as exc:
             logger.error("Roleplay generation failed: %s", exc, exc_info=True)

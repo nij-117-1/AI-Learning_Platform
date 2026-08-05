@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from learning.tutor_chat.schemas import ConceptItem, TutorChatRequest, TutorChatResponse
 
 logger = logging.getLogger(__name__)
@@ -44,13 +44,7 @@ class TutorChatService:
     """Business layer wrapping the DSPy topic-scoped tutor chat pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.4),
-            cache=False,
-        )
+        self.lm = build_lm(temperature=0.4, cache=False)
 
     @staticmethod
     def _as_dict(raw: object) -> Dict[str, Any]:
@@ -150,13 +144,14 @@ class TutorChatService:
         """
         try:
             history_text = self._format_history(data.chat_history)
-            with dspy.context(lm=self.lm):
-                prediction = dspy.Predict(TutorBot)(
-                    master_topic=data.master_topic,
-                    additional_context=data.additional_context or "",
-                    chat_history=history_text,
-                    user_input=data.user_input,
-                )
+            prediction = run_predictor(
+                TutorBot,
+                self.lm,
+                master_topic=data.master_topic,
+                additional_context=data.additional_context or "",
+                chat_history=history_text,
+                user_input=data.user_input,
+            )
 
             logger.info("Tutor chat turn on topic '%s'", data.master_topic)
             return TutorChatResponse(

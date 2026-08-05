@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from learning.skill_architect.schemas import SkillArchitectRequest, SkillArchitectResponse, SkillLevel
 
 logger = logging.getLogger(__name__)
@@ -70,13 +70,7 @@ class SkillArchitectService:
     """Business layer wrapping the DSPy root-skill tree generation pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=0.4,
-            cache=False,
-        )
+        self.lm = build_lm(temperature=0.4, cache=False)
 
     @staticmethod
     def _as_dict(raw: object) -> Dict[str, Any]:
@@ -163,14 +157,14 @@ class SkillArchitectService:
             GenerationError: If the DSPy pipeline fails to generate content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                architect = dspy.ChainOfThought(RootSkillArchitect)
-                result = architect(
-                    domain_or_skill=data.domain_or_skill,
-                    current_proficiency=data.current_proficiency,
-                    target_mastery_level=data.target_mastery_level,
-                    learning_constraints=data.learning_constraints or "",
-                )
+            result = run_predictor(
+                RootSkillArchitect,
+                self.lm,
+                domain_or_skill=data.domain_or_skill,
+                current_proficiency=data.current_proficiency,
+                target_mastery_level=data.target_mastery_level,
+                learning_constraints=data.learning_constraints or "",
+            )
 
             logger.info("Generated skill tree for '%s'", data.domain_or_skill)
             return SkillArchitectResponse(

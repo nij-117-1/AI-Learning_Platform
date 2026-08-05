@@ -4,7 +4,7 @@ from typing import List, Literal
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from linguistic.sentence_of_the_day.schemas import SentenceRequest, SentenceResponse
 
 logger = logging.getLogger(__name__)
@@ -45,13 +45,7 @@ class SentenceService:
     """Business layer wrapping the DSPy Sentence of the Day pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.7),
-            cache=False,
-        )
+        self.lm = build_lm(cache=False)
 
     def generate_daily_sentence(self, data: SentenceRequest) -> SentenceResponse:
         """
@@ -68,16 +62,16 @@ class SentenceService:
         """
         today = datetime.now().strftime("%Y-%m-%d")
         try:
-            with dspy.context(lm=self.lm):
-                generator = dspy.Predict(SentenceOfTheDaySignature)
-                response = generator(
-                    date=today,
-                    target_language=data.target_language,
-                    native_language=data.native_language,
-                    context_setting=data.context_setting,
-                    complexity_level=data.complexity_level,
-                    seed=f"{today}_{data.target_language}",
-                )
+            response = run_predictor(
+                SentenceOfTheDaySignature,
+                self.lm,
+                date=today,
+                target_language=data.target_language,
+                native_language=data.native_language,
+                context_setting=data.context_setting,
+                complexity_level=data.complexity_level,
+                seed=f"{today}_{data.target_language}",
+            )
             return SentenceResponse(
                 date=today,
                 target_sentence=response.target_sentence,

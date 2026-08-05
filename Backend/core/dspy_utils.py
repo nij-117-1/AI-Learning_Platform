@@ -28,11 +28,17 @@ def build_lm(**overrides: Any) -> dspy.LM:
         cfg["model_name"],
         cfg["api_base"],
     )
+    extra_kwargs: Dict[str, Any] = {
+        key: value
+        for key, value in cfg.items()
+        if key not in ("model_name", "api_key", "api_base", "temperature")
+    }
     return dspy.LM(
         model=f"openai/{cfg['model_name']}",
         api_key=cfg["api_key"],
         api_base=cfg["api_base"],
         temperature=cfg.get("temperature", 0.7),
+        **extra_kwargs,
     )
 
 

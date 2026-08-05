@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from learning.guides.schemas import (
     DailyPlannerRequest,
     DailyPlannerResponse,
@@ -136,12 +136,7 @@ class GuideService:
     """Business layer wrapping the DSPy learning guide pipelines."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.7),
-        )
+        self.lm = build_lm()
 
     async def generate_guide(self, data: GuideRequest) -> GuideResponse:
         """
@@ -158,18 +153,18 @@ class GuideService:
         """
         try:
             logger.info("Generating learning guide for subject: %s", data.subject)
-            with dspy.context(lm=self.lm):
-                execution_uuid = str(uuid.uuid4())
-                generator = dspy.ChainOfThought(TaskGivingAgent)
-                prediction = generator(
-                    learning_subject=data.subject,
-                    target_goal=data.goal,
-                    current_level=data.current_level,
-                    num_tasks=data.count,
-                    previous_tasks=data.history,
-                    random_seed=execution_uuid,
-                    custom_instructions=data.instructions or "Focus on best practices.",
-                )
+            execution_uuid = str(uuid.uuid4())
+            prediction = run_predictor(
+                TaskGivingAgent,
+                self.lm,
+                learning_subject=data.subject,
+                target_goal=data.goal,
+                current_level=data.current_level,
+                num_tasks=data.count,
+                previous_tasks=data.history,
+                random_seed=execution_uuid,
+                custom_instructions=data.instructions or "Focus on best practices.",
+            )
 
             return GuideResponse(
                 mentor_feedback=prediction.mentor_feedback,
@@ -194,19 +189,19 @@ class GuideService:
         """
         try:
             logger.info("Generating daily plan for topic: %s", data.master_topic)
-            with dspy.context(lm=self.lm):
-                execution_uuid = str(uuid.uuid4())
-                planner = dspy.ChainOfThought(DailyLearningPlanner)
-                response = planner(
-                    master_topic=data.master_topic,
-                    subtopic_preference=data.subtopic_preference or "Logical progression",
-                    user_level=data.user_level,
-                    target_mastery=data.target_mastery,
-                    existing_knowledge=data.existing_knowledge,
-                    learning_focus=data.learning_focus,
-                    random_seed=execution_uuid,
-                    previously_learned_topics=data.history or "None",
-                )
+            execution_uuid = str(uuid.uuid4())
+            response = run_predictor(
+                DailyLearningPlanner,
+                self.lm,
+                master_topic=data.master_topic,
+                subtopic_preference=data.subtopic_preference or "Logical progression",
+                user_level=data.user_level,
+                target_mastery=data.target_mastery,
+                existing_knowledge=data.existing_knowledge,
+                learning_focus=data.learning_focus,
+                random_seed=execution_uuid,
+                previously_learned_topics=data.history or "None",
+            )
 
             return DailyPlannerResponse(
                 learning_objective=response.learning_objective,
@@ -234,16 +229,16 @@ class GuideService:
         """
         try:
             logger.info("Generating project blueprint for topic: %s", data.master_topic)
-            with dspy.context(lm=self.lm):
-                execution_uuid = str(uuid.uuid4())
-                architect = dspy.ChainOfThought(RealWorldProjectArchitect)
-                response = architect(
-                    master_topic=data.master_topic,
-                    subtopic_focus=data.subtopic_focus,
-                    target_mastery=data.target_mastery,
-                    random_seed=execution_uuid,
-                    preferred_industry=data.preferred_industry or "General Tech",
-                )
+            execution_uuid = str(uuid.uuid4())
+            response = run_predictor(
+                RealWorldProjectArchitect,
+                self.lm,
+                master_topic=data.master_topic,
+                subtopic_focus=data.subtopic_focus,
+                target_mastery=data.target_mastery,
+                random_seed=execution_uuid,
+                preferred_industry=data.preferred_industry or "General Tech",
+            )
 
             return ProjectArchitectResponse(
                 project_name=response.project_name,
@@ -273,17 +268,17 @@ class GuideService:
         """
         try:
             logger.info("Suggesting next topics for: %s", data.specific_interest)
-            with dspy.context(lm=self.lm):
-                recommender = dspy.ChainOfThought(WhatToLearnToday)
-                prediction = recommender(
-                    broader_topic=data.broader_topic,
-                    specific_interest=data.specific_interest,
-                    learned_before=data.learned_before,
-                    previous_suggestions=data.previous_suggestions,
-                    custom_user_input=data.custom_user_input,
-                    topic_level=data.topic_level,
-                    seed_uuid=str(uuid.uuid4()),
-                )
+            prediction = run_predictor(
+                WhatToLearnToday,
+                self.lm,
+                broader_topic=data.broader_topic,
+                specific_interest=data.specific_interest,
+                learned_before=data.learned_before,
+                previous_suggestions=data.previous_suggestions,
+                custom_user_input=data.custom_user_input,
+                topic_level=data.topic_level,
+                seed_uuid=str(uuid.uuid4()),
+            )
 
             suggestions = [LearningTopicSuggestion(**item) for item in prediction.recommendations]
             return WhatToLearnResponse(recommendations=suggestions)
@@ -306,17 +301,17 @@ class GuideService:
         """
         try:
             logger.info("Suggesting projects for topic: %s", data.topic)
-            with dspy.context(lm=self.lm):
-                execution_uuid = str(uuid.uuid4())
-                generator = dspy.ChainOfThought(ProjectSuggestor)
-                prediction = generator(
-                    topic=data.topic,
-                    industry=data.industry,
-                    num_use_cases=data.num_use_cases,
-                    existing_suggestions=data.existing_suggestions,
-                    user_instructions=data.user_instructions or "No specific instructions.",
-                    random_seed=execution_uuid,
-                )
+            execution_uuid = str(uuid.uuid4())
+            prediction = run_predictor(
+                ProjectSuggestor,
+                self.lm,
+                topic=data.topic,
+                industry=data.industry,
+                num_use_cases=data.num_use_cases,
+                existing_suggestions=data.existing_suggestions,
+                user_instructions=data.user_instructions or "No specific instructions.",
+                random_seed=execution_uuid,
+            )
 
             project_list = [ProjectIdea(**proj) for proj in prediction.projects]
             return ProjectSuggestorResponse(

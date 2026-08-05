@@ -5,7 +5,7 @@ from typing import Any, AsyncGenerator, Dict, List, Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from learning.explainer.schemas import (
     AtoZRequest,
     ExplanationRequest,
@@ -214,12 +214,7 @@ class ExplainerService:
     """Business layer wrapping the DSPy explanation pipelines."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=0.4,
-        )
+        self.lm = build_lm(temperature=0.4)
 
     def generate_explanation(self, data: ExplanationRequest) -> Dict[str, Any]:
         """
@@ -235,18 +230,18 @@ class ExplainerService:
             GenerationError: If the DSPy pipeline fails to generate content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                explainer = dspy.Predict(GeneralExplainer)
-                response = explainer(
-                    topic=data.topic,
-                    expertise_level=data.expertise_level,
-                    context=data.context or "N/A",
-                )
-                logger.info("Successfully generated explanation for topic: %s", data.topic)
-                return {
-                    "explanation": response.explanation,
-                    "key_takeaway": response.key_takeaway,
-                }
+            response = run_predictor(
+                GeneralExplainer,
+                self.lm,
+                topic=data.topic,
+                expertise_level=data.expertise_level,
+                context=data.context or "N/A",
+            )
+            logger.info("Successfully generated explanation for topic: %s", data.topic)
+            return {
+                "explanation": response.explanation,
+                "key_takeaway": response.key_takeaway,
+            }
         except Exception as exc:
             logger.error("Error generating explanation for topic %s: %s", data.topic, exc)
             raise GenerationError(str(exc)) from exc
@@ -265,15 +260,15 @@ class ExplainerService:
             GenerationError: If the DSPy pipeline fails to generate content.
         """
         try:
-            with dspy.settings.context(lm=self.lm):
-                explainer = dspy.Predict(TopicExplainerString)
-                response = explainer(
-                    topic=data.topic,
-                    expertise_level=data.expertise_level,
-                    explanation_style=data.explanation_style,
-                )
-                logger.info("Tutorial generated for: %s", data.topic)
-                return response.full_explanation
+            response = run_predictor(
+                TopicExplainerString,
+                self.lm,
+                topic=data.topic,
+                expertise_level=data.expertise_level,
+                explanation_style=data.explanation_style,
+            )
+            logger.info("Tutorial generated for: %s", data.topic)
+            return response.full_explanation
         except Exception as exc:
             logger.error("DSPy Tutorial Generation Error: %s", exc)
             raise GenerationError(str(exc)) from exc
@@ -292,19 +287,19 @@ class ExplainerService:
             GenerationError: If the DSPy pipeline fails to generate content.
         """
         try:
-            with dspy.settings.context(lm=self.lm):
-                explainer = dspy.Predict(AtoZExplainer)
-                response = explainer(
-                    topic=data.topic,
-                    expertise_level=data.expertise_level,
-                    explanation_style=data.explanation_style,
-                )
-                logger.info("Roadmap generated for: %s", data.topic)
-                return {
-                    "summary": response.summary,
-                    "knowledge_roadmap": response.knowledge_roadmap,
-                    "practical_takeaway": response.practical_takeaway,
-                }
+            response = run_predictor(
+                AtoZExplainer,
+                self.lm,
+                topic=data.topic,
+                expertise_level=data.expertise_level,
+                explanation_style=data.explanation_style,
+            )
+            logger.info("Roadmap generated for: %s", data.topic)
+            return {
+                "summary": response.summary,
+                "knowledge_roadmap": response.knowledge_roadmap,
+                "practical_takeaway": response.practical_takeaway,
+            }
         except Exception as exc:
             logger.error("Error in A-to-Z roadmap generation: %s", exc)
             raise GenerationError(str(exc)) from exc
@@ -323,18 +318,18 @@ class ExplainerService:
             GenerationError: If the DSPy pipeline fails to generate content.
         """
         try:
-            with dspy.settings.context(lm=self.lm):
-                explainer = dspy.Predict(FeynmanExplainer)
-                response = explainer(
-                    complex_topic=data.complex_topic,
-                    target_age=data.target_age,
-                )
-                logger.info("Feynman simplification generated for: %s", data.complex_topic)
-                return {
-                    "explanation": response.explanation,
-                    "key_metaphors": response.key_metaphors,
-                    "fun_analogy": response.fun_analogy,
-                }
+            response = run_predictor(
+                FeynmanExplainer,
+                self.lm,
+                complex_topic=data.complex_topic,
+                target_age=data.target_age,
+            )
+            logger.info("Feynman simplification generated for: %s", data.complex_topic)
+            return {
+                "explanation": response.explanation,
+                "key_metaphors": response.key_metaphors,
+                "fun_analogy": response.fun_analogy,
+            }
         except Exception as exc:
             logger.error("Feynman Service Error: %s", exc)
             raise GenerationError(str(exc)) from exc
@@ -353,22 +348,22 @@ class ExplainerService:
             GenerationError: If the DSPy pipeline fails to generate content.
         """
         try:
-            with dspy.settings.context(lm=self.lm):
-                mentor = dspy.ChainOfThought(SocraticQuestionGenerator)
-                response = mentor(
-                    topic=data.topic,
-                    context=data.context,
-                    user_instructions=data.user_instructions or "None",
-                    level=data.level,
-                    question_category=data.question_category,
-                    num_questions=data.num_questions,
-                )
-                logger.info("Socratic session generated for topic: %s", data.topic)
-                return {
-                    "pedagogical_goal": response.pedagogical_goal,
-                    "question_category": data.question_category,
-                    "questions_for_discovery": response.questions_for_discovery,
-                }
+            response = run_predictor(
+                SocraticQuestionGenerator,
+                self.lm,
+                topic=data.topic,
+                context=data.context,
+                user_instructions=data.user_instructions or "None",
+                level=data.level,
+                question_category=data.question_category,
+                num_questions=data.num_questions,
+            )
+            logger.info("Socratic session generated for topic: %s", data.topic)
+            return {
+                "pedagogical_goal": response.pedagogical_goal,
+                "question_category": data.question_category,
+                "questions_for_discovery": response.questions_for_discovery,
+            }
         except Exception as exc:
             logger.error("Socratic Service Error: %s", exc)
             raise GenerationError(str(exc)) from exc
@@ -388,25 +383,25 @@ class ExplainerService:
         """
         session_seed = str(uuid.uuid4())
         try:
-            with dspy.settings.context(lm=self.lm):
-                architect = dspy.ChainOfThought(TopicLearningPath)
-                response = architect(
-                    topic=data.topic,
-                    context=data.context,
-                    past_learning=data.past_learning,
-                    user_level=data.user_level,
-                    user_hopes=data.user_hopes,
-                    seed=session_seed,
-                    additional_instructions=data.additional_instructions or "N/A",
-                )
-                logger.info("Generated learning path for session: %s", session_seed)
-                return {
-                    "session_id": session_seed,
-                    "rationale": response.rationale,
-                    "the_crux": response.the_crux,
-                    "learning_roadmap": response.learning_roadmap,
-                    "suggested_focus": response.suggested_focus,
-                }
+            response = run_predictor(
+                TopicLearningPath,
+                self.lm,
+                topic=data.topic,
+                context=data.context,
+                past_learning=data.past_learning,
+                user_level=data.user_level,
+                user_hopes=data.user_hopes,
+                seed=session_seed,
+                additional_instructions=data.additional_instructions or "N/A",
+            )
+            logger.info("Generated learning path for session: %s", session_seed)
+            return {
+                "session_id": session_seed,
+                "rationale": response.rationale,
+                "the_crux": response.the_crux,
+                "learning_roadmap": response.learning_roadmap,
+                "suggested_focus": response.suggested_focus,
+            }
         except Exception as exc:
             logger.error("Curriculum Architect Error: %s", exc)
             raise GenerationError(str(exc)) from exc
@@ -416,12 +411,7 @@ class OrchestratorService:
     """Business layer orchestrating the streaming A-to-Z journey."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=0.4,
-        )
+        self.lm = build_lm(temperature=0.4)
 
     async def stream_atoz_journey(self, topic: str, expertise: str) -> AsyncGenerator[str, None]:
         """
@@ -436,40 +426,39 @@ class OrchestratorService:
             str: JSON-encoded event payloads (plan / chapter / done / error).
         """
         try:
-            with dspy.settings.context(lm=self.lm):
-                architect = dspy.Predict(ExplainerArchitect)
-                plan = architect(topic=topic, depth_level=expertise)
+            plan = run_predictor(ExplainerArchitect, self.lm, topic=topic, depth_level=expertise)
+
+            yield json.dumps({
+                "event": "plan",
+                "data": {
+                    "titles": plan.knowledge_graph_outline,
+                    "prerequisites": plan.core_prerequisites,
+                },
+            })
+
+            for index, chapter in enumerate(plan.knowledge_graph_outline):
+                logger.info("Streaming Chapter %s: %s", index + 1, chapter)
+
+                detail = run_predictor(
+                    SectionExplainer,
+                    self.lm,
+                    full_topic=topic,
+                    current_chapter=chapter,
+                    context_of_other_chapters=plan.knowledge_graph_outline,
+                )
 
                 yield json.dumps({
-                    "event": "plan",
+                    "event": "chapter",
                     "data": {
-                        "titles": plan.knowledge_graph_outline,
-                        "prerequisites": plan.core_prerequisites,
+                        "index": index + 1,
+                        "title": chapter,
+                        "content": detail.technical_explanation,
+                        "analogy": detail.mental_model_analogy,
+                        "jargon": detail.key_terms,
                     },
                 })
 
-                explainer = dspy.Predict(SectionExplainer)
-                for index, chapter in enumerate(plan.knowledge_graph_outline):
-                    logger.info("Streaming Chapter %s: %s", index + 1, chapter)
-
-                    detail = explainer(
-                        full_topic=topic,
-                        current_chapter=chapter,
-                        context_of_other_chapters=plan.knowledge_graph_outline,
-                    )
-
-                    yield json.dumps({
-                        "event": "chapter",
-                        "data": {
-                            "index": index + 1,
-                            "title": chapter,
-                            "content": detail.technical_explanation,
-                            "analogy": detail.mental_model_analogy,
-                            "jargon": detail.key_terms,
-                        },
-                    })
-
-                yield json.dumps({"event": "done", "data": "Journey complete."})
+            yield json.dumps({"event": "done", "data": "Journey complete."})
         except Exception as exc:
             logger.error("Streaming Error: %s", exc)
             yield json.dumps({"event": "error", "data": str(exc)})

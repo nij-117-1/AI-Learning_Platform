@@ -6,7 +6,8 @@ from typing import List, Optional
 import dspy
 import yaml
 
-from core.config import master_llm_config as config, settings
+from core.config import settings
+from core.dspy_utils import build_lm, run_predictor
 from linguistic.simulator.schemas import ChatMessage, ChatRequest, SimulationRequest
 
 logger = logging.getLogger(__name__)
@@ -59,37 +60,11 @@ class SituationalChat(dspy.Signature):
     dialogue: str = dspy.OutputField(desc="Your response to the user, written in character.")
 
 
-class BehavioralEngine(dspy.Module):
-    """DSPy module wrapping the situational simulation predictor."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.simulator = dspy.ChainOfThought(SituationSimulator)
-
-    def forward(self, **kwargs) -> dspy.Prediction:
-        """
-        Runs a single simulation step.
-
-        Args:
-            **kwargs: The SituationSimulator input fields.
-
-        Returns:
-            dspy.Prediction: The simulation result.
-        """
-        return self.simulator(**kwargs)
-
-
 class SimulationService:
     """Business layer wrapping the DSPy behavioral simulation pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.7),
-            cache=False,
-        )
+        self.lm = build_lm(cache=False)
 
     def run_behavioral_sim(self, data: SimulationRequest) -> dict:
         """
@@ -106,15 +81,15 @@ class SimulationService:
         """
         run_id = str(uuid.uuid4())
         try:
-            with dspy.context(lm=self.lm):
-                engine = BehavioralEngine()
-                prediction = engine(
-                    system_prompt=data.persona,
-                    scenario=data.scenario,
-                    user_input=data.user_input,
-                    additional_context=data.additional_context or "N/A",
-                    seed_uuid=run_id,
-                )
+            prediction = run_predictor(
+                SituationSimulator,
+                self.lm,
+                system_prompt=data.persona,
+                scenario=data.scenario,
+                user_input=data.user_input,
+                additional_context=data.additional_context or "N/A",
+                seed_uuid=run_id,
+            )
             logger.info("Simulation successful: %s", run_id)
             return {
                 "simulation_id": run_id,
@@ -128,52 +103,11 @@ class SimulationService:
             raise GenerationError(str(exc)) from exc
 
 
-class SituationalBot(dspy.Module):
-    """DSPy module wrapping the situational chat predictor."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.chat_engine = dspy.ChainOfThought(SituationalChat)
-
-    def forward(
-        self,
-        system_prompt: str,
-        scenario: str,
-        history_list: List[ChatMessage],
-        user_input: str,
-    ) -> dspy.Prediction:
-        """
-        Runs a single chat turn with a formatted history.
-
-        Args:
-            system_prompt (str): The persona and rules.
-            scenario (str): The ongoing situation.
-            history_list (List[ChatMessage]): Previous conversation turns.
-            user_input (str): The latest user message.
-
-        Returns:
-            dspy.Prediction: The thought and in-character dialogue.
-        """
-        formatted_history = "\n".join(f"{message.role}: {message.content}" for message in history_list)
-        return self.chat_engine(
-            system_prompt=system_prompt,
-            scenario=scenario,
-            chat_history=formatted_history,
-            user_input=user_input,
-        )
-
-
 class ChatService:
     """Business layer wrapping the DSPy situational chat pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.7),
-            cache=False,
-        )
+        self.lm = build_lm(cache=False)
 
     def execute_chat(self, data: ChatRequest) -> dict:
         """
@@ -189,14 +123,15 @@ class ChatService:
             GenerationError: If the DSPy pipeline fails to produce content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                bot = SituationalBot()
-                result = bot(
-                    system_prompt=data.persona,
-                    scenario=data.scenario,
-                    history_list=data.chat_history,
-                    user_input=data.user_input,
-                )
+            formatted_history = "\n".join(f"{message.role}: {message.content}" for message in data.chat_history)
+            result = run_predictor(
+                SituationalChat,
+                self.lm,
+                system_prompt=data.persona,
+                scenario=data.scenario,
+                chat_history=formatted_history,
+                user_input=data.user_input,
+            )
 
             new_history = data.chat_history + [
                 ChatMessage(role="User", content=data.user_input),

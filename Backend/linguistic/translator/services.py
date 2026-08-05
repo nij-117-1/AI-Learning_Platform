@@ -3,7 +3,7 @@ from typing import Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from linguistic.translator.schemas import TranslationRequest, TranslationResponse
 
 logger = logging.getLogger(__name__)
@@ -40,13 +40,7 @@ class TranslatorService:
     """Business layer wrapping the DSPy contextual translation pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.7),
-            cache=False,
-        )
+        self.lm = build_lm(cache=False)
 
     def translate(self, data: TranslationRequest) -> TranslationResponse:
         """
@@ -62,16 +56,16 @@ class TranslatorService:
             GenerationError: If the DSPy pipeline fails to produce content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                translator = dspy.ChainOfThought(ContextualTranslator)
-                response = translator(
-                    text_to_translate=data.text_to_translate,
-                    source_language=data.source_language,
-                    target_language=data.target_language,
-                    tone=data.tone,
-                    reference_material=data.reference_material,
-                    custom_instructions=data.custom_instructions,
-                )
+            response = run_predictor(
+                ContextualTranslator,
+                self.lm,
+                text_to_translate=data.text_to_translate,
+                source_language=data.source_language,
+                target_language=data.target_language,
+                tone=data.tone,
+                reference_material=data.reference_material,
+                custom_instructions=data.custom_instructions,
+            )
             return TranslationResponse(
                 rationale=response.rationale,
                 translated_text=response.translated_text,

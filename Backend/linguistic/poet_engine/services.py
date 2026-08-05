@@ -3,7 +3,7 @@ from typing import Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from linguistic.poet_engine.schemas import ConceptRequest, ConceptResponse
 
 logger = logging.getLogger(__name__)
@@ -43,13 +43,7 @@ class PoetService:
     """Business layer wrapping the DSPy poetic philology pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.7),
-            cache=False,
-        )
+        self.lm = build_lm(cache=False)
 
     def generate_explanation(self, data: ConceptRequest) -> ConceptResponse:
         """
@@ -66,16 +60,16 @@ class PoetService:
         """
         try:
             logger.info("Generating poetic insight for concept: %s", data.concept_word)
-            with dspy.context(lm=self.lm):
-                explainer = dspy.ChainOfThought(PoeticLanguageExplainer)
-                prediction = explainer(
-                    target_language=data.target_language,
-                    native_language=data.native_language,
-                    concept_word=data.concept_word,
-                    poetic_style=data.poetic_style,
-                    user_mood=data.user_mood,
-                    user_custom_instruction=data.user_custom_instruction,
-                )
+            prediction = run_predictor(
+                PoeticLanguageExplainer,
+                self.lm,
+                target_language=data.target_language,
+                native_language=data.native_language,
+                concept_word=data.concept_word,
+                poetic_style=data.poetic_style,
+                user_mood=data.user_mood,
+                user_custom_instruction=data.user_custom_instruction,
+            )
             return ConceptResponse(
                 etymological_soul=prediction.etymological_soul,
                 original_poetry=prediction.original_poetry,

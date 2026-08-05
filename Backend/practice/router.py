@@ -15,7 +15,7 @@ from practice.riddle.router import router as riddle_router
 from practice.socratic.router import router as socratic_router
 from practice.testing_portal.router import router as testing_portal_router
 
-practice_router = APIRouter(prefix="/practice", tags=["Practice Module"])
+practice_router = APIRouter(prefix="/practice")
 practice_router.include_router(battleground_router)
 practice_router.include_router(bias_inoculator_router)
 practice_router.include_router(clarity_trainer_router)

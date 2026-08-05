@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from linguistic.language_tester.schemas import (
     AssessmentRequest,
     AssessmentResponse,
@@ -155,13 +155,7 @@ class LanguageTesterService:
     """Business layer wrapping the DSPy language assessment pipelines."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.7),
-            cache=False,
-        )
+        self.lm = build_lm(cache=False)
 
     def generate_assessment(self, data: AssessmentRequest) -> AssessmentResponse:
         """
@@ -178,18 +172,18 @@ class LanguageTesterService:
         """
         try:
             logger.info("Generating %s %s assessment for scenario: %s", data.level, data.target_language, data.scenario)
-            with dspy.context(lm=self.lm):
-                generator = dspy.ChainOfThought(LanguageMCQEvaluator)
-                response = generator(
-                    target_language=data.target_language,
-                    native_language=data.native_language,
-                    level=data.level,
-                    num_questions=data.num_questions,
-                    scenario=data.scenario,
-                    user_details=data.user_details,
-                    seed=data.seed,
-                    custom_instructions=data.custom_instructions,
-                )
+            response = run_predictor(
+                LanguageMCQEvaluator,
+                self.lm,
+                target_language=data.target_language,
+                native_language=data.native_language,
+                level=data.level,
+                num_questions=data.num_questions,
+                scenario=data.scenario,
+                user_details=data.user_details,
+                seed=data.seed,
+                custom_instructions=data.custom_instructions,
+            )
             return AssessmentResponse(
                 assessment_title=response.assessment_title,
                 level_rationale=response.level_rationale,
@@ -213,16 +207,16 @@ class LanguageTesterService:
             GenerationError: If the DSPy pipeline fails to produce content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                generator = dspy.Predict(FillInTheBlankGenerator)
-                response = generator(
-                    target_language=data.target_language,
-                    level=data.level,
-                    num_questions=data.num_questions,
-                    scenario=data.scenario,
-                    user_details=data.user_details,
-                    seed=data.seed,
-                )
+            response = run_predictor(
+                FillInTheBlankGenerator,
+                self.lm,
+                target_language=data.target_language,
+                level=data.level,
+                num_questions=data.num_questions,
+                scenario=data.scenario,
+                user_details=data.user_details,
+                seed=data.seed,
+            )
             return FIBResponse(questions=response.questions)
         except Exception as exc:
             logger.error("Fill-in-the-blank generation failed: %s", exc, exc_info=True)
@@ -242,13 +236,13 @@ class LanguageTesterService:
             GenerationError: If the DSPy pipeline fails to produce content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                evaluator = dspy.Predict(WordEvaluator)
-                response = evaluator(
-                    sentence_context=data.sentence_context,
-                    correct_word=data.correct_word,
-                    user_answer=data.user_answer,
-                )
+            response = run_predictor(
+                WordEvaluator,
+                self.lm,
+                sentence_context=data.sentence_context,
+                correct_word=data.correct_word,
+                user_answer=data.user_answer,
+            )
             return EvaluationResponse(
                 is_correct=response.is_correct,
                 status=response.status,
@@ -276,18 +270,18 @@ class LanguageTesterService:
             random_gen = random.Random(data.seed)
             chosen_mode = random_gen.choice(TEST_MODES)
 
-            with dspy.context(lm=self.lm):
-                generator = dspy.ChainOfThought(TranslationChallengeGenerator)
-                response = generator(
-                    target_language=data.target_language,
-                    native_language=data.native_language,
-                    level=data.level,
-                    scenario=data.scenario,
-                    user_persona=data.user_persona,
-                    test_type=chosen_mode,
-                    seed=data.seed,
-                    custom_instructions=data.custom_instructions,
-                )
+            response = run_predictor(
+                TranslationChallengeGenerator,
+                self.lm,
+                target_language=data.target_language,
+                native_language=data.native_language,
+                level=data.level,
+                scenario=data.scenario,
+                user_persona=data.user_persona,
+                test_type=chosen_mode,
+                seed=data.seed,
+                custom_instructions=data.custom_instructions,
+            )
             return TranslationChallengeResponse(
                 test_type=chosen_mode,
                 challenge_instruction=response.challenge_instruction,
@@ -317,17 +311,17 @@ class LanguageTesterService:
             logger.info("Continuing roleplay in %s for scenario: %s", data.target_language, data.scenario)
             history_dicts = [message.model_dump() for message in data.chat_history]
 
-            with dspy.context(lm=self.lm):
-                simulator = dspy.ChainOfThought(RoleplayChatEvaluator)
-                response = simulator(
-                    target_language=data.target_language,
-                    level=data.level,
-                    scenario=data.scenario,
-                    user_persona=data.user_persona,
-                    chat_history=history_dicts,
-                    user_latest_response=data.user_latest_response,
-                    seed=data.seed,
-                )
+            response = run_predictor(
+                RoleplayChatEvaluator,
+                self.lm,
+                target_language=data.target_language,
+                level=data.level,
+                scenario=data.scenario,
+                user_persona=data.user_persona,
+                chat_history=history_dicts,
+                user_latest_response=data.user_latest_response,
+                seed=data.seed,
+            )
             return RoleplayResponse(
                 linguistic_critique=response.linguistic_critique,
                 fluency_score=response.fluency_score,

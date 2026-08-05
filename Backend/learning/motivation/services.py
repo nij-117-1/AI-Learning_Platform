@@ -5,7 +5,7 @@ from typing import List, Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from learning.motivation.schemas import MotivationRequest, MotivationResponse, ReflectionRequest, ReflectionResponse
 
 logger = logging.getLogger(__name__)
@@ -57,12 +57,7 @@ class MotivationService:
     """Business layer wrapping the DSPy motivation and reflection pipelines."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.5),
-        )
+        self.lm = build_lm(temperature=0.5)
 
     async def generate_motivation_quote(self, data: MotivationRequest) -> MotivationResponse:
         """
@@ -81,16 +76,16 @@ class MotivationService:
             today_str = str(date.today())
             logger.info("Generating %s motivation for topic: %s", data.quote_type, data.seed_topic)
 
-            with dspy.context(lm=self.lm):
-                execution_uuid = str(uuid.uuid4())
-                generator = dspy.ChainOfThought(MotivationalQuoteGenerator)
-                prediction = generator(
-                    seed_topic=data.seed_topic,
-                    current_date=today_str,
-                    quote_type=data.quote_type,
-                    random_seed=execution_uuid,
-                    user_feeling=data.user_feeling,
-                )
+            execution_uuid = str(uuid.uuid4())
+            prediction = run_predictor(
+                MotivationalQuoteGenerator,
+                self.lm,
+                seed_topic=data.seed_topic,
+                current_date=today_str,
+                quote_type=data.quote_type,
+                random_seed=execution_uuid,
+                user_feeling=data.user_feeling,
+            )
 
             return MotivationResponse(
                 quote=prediction.quote,
@@ -118,15 +113,15 @@ class MotivationService:
         try:
             logger.info("Generating reflection prompts for mood: %s", data.current_mood[:20])
 
-            with dspy.context(lm=self.lm):
-                execution_uuid = str(uuid.uuid4())
-                coach = dspy.ChainOfThought(ReflectionPromptGenerator)
-                prediction = coach(
-                    current_mood=data.current_mood,
-                    goal_alignment=data.goal_alignment,
-                    random_seed=execution_uuid,
-                    recent_patterns=data.recent_patterns or "No specific patterns recorded.",
-                )
+            execution_uuid = str(uuid.uuid4())
+            prediction = run_predictor(
+                ReflectionPromptGenerator,
+                self.lm,
+                current_mood=data.current_mood,
+                goal_alignment=data.goal_alignment,
+                random_seed=execution_uuid,
+                recent_patterns=data.recent_patterns or "No specific patterns recorded.",
+            )
 
             return ReflectionResponse(
                 prompts=prediction.prompts,

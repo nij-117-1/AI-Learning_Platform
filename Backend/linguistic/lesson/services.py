@@ -3,7 +3,7 @@ from typing import List, Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from linguistic.lesson.schemas import LessonRequest, LessonResponse, VocabularyItem
 
 logger = logging.getLogger(__name__)
@@ -48,13 +48,7 @@ class LessonService:
     """Business layer wrapping the DSPy lesson generation pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.7),
-            cache=False,
-        )
+        self.lm = build_lm(cache=False)
 
     def generate_lesson(self, data: LessonRequest) -> LessonResponse:
         """
@@ -70,18 +64,18 @@ class LessonService:
             GenerationError: If the DSPy pipeline fails to produce content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                tutor = dspy.ChainOfThought(LanguageLessonGenerator)
-                prediction = tutor(
-                    native_language=data.native_language,
-                    target_language=data.target_language,
-                    current_level=data.current_level,
-                    last_lesson_summary=data.last_lesson_summary,
-                    learning_focus=data.learning_focus,
-                    complexity_weight=data.complexity_weight,
-                    seed=data.seed,
-                    user_custom_instruction=data.user_custom_instruction,
-                )
+            prediction = run_predictor(
+                LanguageLessonGenerator,
+                self.lm,
+                native_language=data.native_language,
+                target_language=data.target_language,
+                current_level=data.current_level,
+                last_lesson_summary=data.last_lesson_summary,
+                learning_focus=data.learning_focus,
+                complexity_weight=data.complexity_weight,
+                seed=data.seed,
+                user_custom_instruction=data.user_custom_instruction,
+            )
             vocabulary = [VocabularyItem(**item) for item in prediction.thematic_vocabulary]
             return LessonResponse(
                 header=prediction.lesson_header,

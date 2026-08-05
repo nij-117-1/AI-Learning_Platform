@@ -3,7 +3,7 @@ from typing import List, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from learning.memory_helper.schemas import MemoryHook, MemoryRequest, MemoryResponse
 
 logger = logging.getLogger(__name__)
@@ -37,13 +37,7 @@ class MemoryService:
     """Business layer wrapping the DSPy mnemonic generation pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            cache=False,
-            temperature=config.get('temperature', 0.5),
-        )
+        self.lm = build_lm(cache=False, temperature=0.5)
 
     async def run_agent(self, request_data: MemoryRequest) -> MemoryResponse:
         """
@@ -60,12 +54,12 @@ class MemoryService:
         """
         try:
             logger.info("Generating memory hooks for topic: %s", request_data.topic)
-            with dspy.context(lm=self.lm):
-                agent = dspy.ChainOfThought(MemoryAgent)
-                response = agent(
-                    content_to_remember=request_data.topic,
-                    preferred_technique=request_data.technique,
-                )
+            response = run_predictor(
+                MemoryAgent,
+                self.lm,
+                content_to_remember=request_data.topic,
+                preferred_technique=request_data.technique,
+            )
 
             hooks = [MemoryHook(**hook) for hook in response.memory_hooks]
             return MemoryResponse(

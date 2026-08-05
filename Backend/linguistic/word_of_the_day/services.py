@@ -4,7 +4,7 @@ from typing import List, Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from linguistic.word_of_the_day.schemas import WOTDRequest, WOTDResponse
 
 logger = logging.getLogger(__name__)
@@ -49,13 +49,7 @@ class WordOfTheDayService:
     """Business layer wrapping the DSPy Word of the Day pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.7),
-            cache=False,
-        )
+        self.lm = build_lm(cache=False)
 
     async def generate_daily_word(self, data: WOTDRequest) -> WOTDResponse:
         """
@@ -71,17 +65,17 @@ class WordOfTheDayService:
             GenerationError: If the DSPy pipeline fails to generate content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                explorer = dspy.ChainOfThought(WordOfTheDayExplorer)
-                prediction = explorer(
-                    date=datetime.now().strftime("%Y-%m-%d"),
-                    target_language=data.target_language,
-                    native_language=data.native_language,
-                    user_proficiency=data.proficiency,
-                    thematic_focus=data.theme,
-                    seed=f"fixed_seed_{datetime.now().day}",
-                    user_custom_instructions=data.custom_instructions,
-                )
+            prediction = run_predictor(
+                WordOfTheDayExplorer,
+                self.lm,
+                date=datetime.now().strftime("%Y-%m-%d"),
+                target_language=data.target_language,
+                native_language=data.native_language,
+                user_proficiency=data.proficiency,
+                thematic_focus=data.theme,
+                seed=f"fixed_seed_{datetime.now().day}",
+                user_custom_instructions=data.custom_instructions,
+            )
             return WOTDResponse(
                 word=prediction.word,
                 native_translation=prediction.native_translation,

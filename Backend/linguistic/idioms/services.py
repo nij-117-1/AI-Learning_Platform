@@ -3,7 +3,7 @@ from typing import Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from linguistic.idioms.schemas import IdiomRequest, IdiomResponse
 
 logger = logging.getLogger(__name__)
@@ -46,13 +46,7 @@ class IdiomService:
     """Business layer wrapping the DSPy idiom lesson pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.7),
-            cache=False,
-        )
+        self.lm = build_lm(cache=False)
 
     def generate_idiom_lesson(self, data: IdiomRequest) -> IdiomResponse:
         """
@@ -68,16 +62,16 @@ class IdiomService:
             GenerationError: If the DSPy pipeline fails to produce content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                predictor = dspy.ChainOfThought(IdiomsHelper)
-                result = predictor(
-                    target_language=data.target_language,
-                    user_proficiency=data.user_proficiency,
-                    theme_or_keyword=data.theme_or_keyword,
-                    native_language=data.native_language,
-                    seed=data.seed,
-                    custom_user_request=data.custom_user_request,
-                )
+            result = run_predictor(
+                IdiomsHelper,
+                self.lm,
+                target_language=data.target_language,
+                user_proficiency=data.user_proficiency,
+                theme_or_keyword=data.theme_or_keyword,
+                native_language=data.native_language,
+                seed=data.seed,
+                custom_user_request=data.custom_user_request,
+            )
             return IdiomResponse(
                 rationale=result.rationale,
                 idiom_in_target_language=result.idiom_in_target_language,

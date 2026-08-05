@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from learning.projects.schemas import ProjectRecommendation, ProjectRecommenderRequest, ProjectRecommenderResponse
 
 logger = logging.getLogger(__name__)
@@ -51,13 +51,7 @@ class ProjectRecommenderService:
     """Business layer wrapping the DSPy learning project recommender pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.5),
-            cache=False,
-        )
+        self.lm = build_lm(temperature=0.5, cache=False)
 
     def generate(self, data: ProjectRecommenderRequest) -> ProjectRecommenderResponse:
         """
@@ -73,14 +67,14 @@ class ProjectRecommenderService:
             GenerationError: If the DSPy pipeline fails to produce content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                recommender = dspy.Predict(LearningProjectRecommender)
-                response = recommender(
-                    topic=data.topic,
-                    project_size=data.project_size,
-                    difficulty_level=data.difficulty_level,
-                    num_recommendations=data.num_recommendations,
-                )
+            response = run_predictor(
+                LearningProjectRecommender,
+                self.lm,
+                topic=data.topic,
+                project_size=data.project_size,
+                difficulty_level=data.difficulty_level,
+                num_recommendations=data.num_recommendations,
+            )
             projects = [ProjectRecommendation(**proj) for proj in response.projects]
             return ProjectRecommenderResponse(
                 projects=projects,

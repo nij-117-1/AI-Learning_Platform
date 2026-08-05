@@ -3,7 +3,7 @@ from typing import List, Literal, Optional
 
 import dspy
 
-from core.config import master_llm_config as config
+from core.dspy_utils import build_lm, run_predictor
 from linguistic.rewriter.schemas import RewriteRequest, RewriteResponse
 
 logger = logging.getLogger(__name__)
@@ -39,13 +39,7 @@ class RewriterService:
     """Business layer wrapping the DSPy text rewriting pipeline."""
 
     def __init__(self) -> None:
-        self.lm = dspy.LM(
-            model=f"openai/{config['model_name']}",
-            api_key=config['api_key'],
-            api_base=config['api_base'],
-            temperature=config.get('temperature', 0.7),
-            cache=False,
-        )
+        self.lm = build_lm(cache=False)
 
     def process_rewrite(self, data: RewriteRequest) -> RewriteResponse:
         """
@@ -61,15 +55,15 @@ class RewriterService:
             GenerationError: If the DSPy pipeline fails to produce content.
         """
         try:
-            with dspy.context(lm=self.lm):
-                rewriter = dspy.ChainOfThought(TextRewriterSignature)
-                result = rewriter(
-                    original_text=data.original_text,
-                    target_tone=data.target_tone,
-                    audience=data.audience,
-                    transformation_goal=data.transformation_goal,
-                    custom_instructions=data.custom_instructions or "None",
-                )
+            result = run_predictor(
+                TextRewriterSignature,
+                self.lm,
+                original_text=data.original_text,
+                target_tone=data.target_tone,
+                audience=data.audience,
+                transformation_goal=data.transformation_goal,
+                custom_instructions=data.custom_instructions or "None",
+            )
             logger.info("Successfully processed text rewrite.")
             return RewriteResponse(
                 rationale=result.rationale,
