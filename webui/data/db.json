@@ -154,6 +154,133 @@
     ]
   },
   {
+    "id": "tools",
+    "title": "Tools Hub",
+    "description": "AI-powered productivity tools: convert images, write content, generate diagrams and charts, and check food labels.",
+    "href": "/tools",
+    "category": "Tools",
+    "tags": [
+      "tools",
+      "productivity",
+      "content",
+      "diagrams",
+      "charts",
+      "vision"
+    ]
+  },
+  {
+    "id": "vision-converter",
+    "title": "Vision Converter",
+    "description": "Convert an uploaded image into high-quality, well-structured Markdown.",
+    "href": "/tools/vision",
+    "category": "Tools",
+    "tags": [
+      "tools",
+      "vision",
+      "image",
+      "markdown",
+      "ocr"
+    ]
+  },
+  {
+    "id": "ingredients",
+    "title": "Ingredients Checker",
+    "description": "Snap a photo of a product's ingredients list for a nutritional health analysis.",
+    "href": "/tools/ingredients",
+    "category": "Tools",
+    "tags": [
+      "tools",
+      "ingredients",
+      "health",
+      "nutrition",
+      "food"
+    ]
+  },
+  {
+    "id": "social-posts",
+    "title": "Social Media Post Generator",
+    "description": "Generate platform-specific social posts with designer notes, matched to your brand voice.",
+    "href": "/tools/social-posts",
+    "category": "Tools",
+    "tags": [
+      "tools",
+      "social",
+      "content",
+      "marketing",
+      "posts"
+    ]
+  },
+  {
+    "id": "prompt-generator",
+    "title": "Prompt Generator",
+    "description": "Generate or refine a full LLM system persona with a reproducible seed.",
+    "href": "/tools/prompt-generator",
+    "category": "Tools",
+    "tags": [
+      "tools",
+      "prompt",
+      "persona",
+      "llm",
+      "writing"
+    ]
+  },
+  {
+    "id": "flexible-writer",
+    "title": "Flexible Writer",
+    "description": "Adopt any persona or rule set and transform your input data however you ask.",
+    "href": "/tools/flexible-writer",
+    "category": "Tools",
+    "tags": [
+      "tools",
+      "writer",
+      "writing",
+      "transform",
+      "persona"
+    ]
+  },
+  {
+    "id": "diagram",
+    "title": "Diagram Generator",
+    "description": "Generate or refine Mermaid and Draw.io diagram code from natural language.",
+    "href": "/tools/diagram",
+    "category": "Tools",
+    "tags": [
+      "tools",
+      "diagram",
+      "mermaid",
+      "drawio",
+      "visualization"
+    ]
+  },
+  {
+    "id": "creative-assets",
+    "title": "Creative Assets",
+    "description": "Generate names, hashtags, slogans, and SEO titles with explanations for each.",
+    "href": "/tools/creative-assets",
+    "category": "Tools",
+    "tags": [
+      "tools",
+      "creative",
+      "marketing",
+      "branding",
+      "content"
+    ]
+  },
+  {
+    "id": "charts",
+    "title": "Chart.js Generator",
+    "description": "Generate a Chart.js HTML/JS visualization from raw data and style instructions.",
+    "href": "/tools/charts",
+    "category": "Tools",
+    "tags": [
+      "tools",
+      "charts",
+      "chartjs",
+      "data",
+      "visualization"
+    ]
+  },
+  {
     "id": "learning",
     "title": "Learning Hub",
     "description": "AI-powered explainer tools: quick explanations, A-to-Z tutorials, Feynman simplifications, and more.",
