@@ -168,6 +168,30 @@ export const pages: Page[] = [
     tags: ["tools", "charts", "chartjs", "data", "visualization"]
   },
   {
+    id: "practice",
+    title: "Practice Hub",
+    description: "Generate practice questions, get expert answers, and grade your performance with AI feedback.",
+    href: "/practice",
+    category: "Practice",
+    tags: ["practice", "assessment", "questions", "grading", "education"]
+  },
+  {
+    id: "testing-portal",
+    title: "Testing Portal",
+    description: "Generate MCQs and theoretical questions, get expert answers, and analyze existing questions.",
+    href: "/practice/testing-portal",
+    category: "Practice",
+    tags: ["practice", "assessment", "questions", "mcq", "interview"]
+  },
+  {
+    id: "grader",
+    title: "Performance Grader",
+    description: "Grade a text or image answer against a target objective with a score and constructive feedback.",
+    href: "/practice/grader",
+    category: "Practice",
+    tags: ["practice", "assessment", "grading", "feedback", "education"]
+  },
+  {
     id: "learning",
     title: "Learning Hub",
     description: "AI-powered explainer tools: quick explanations, A-to-Z tutorials, Feynman simplifications, and more.",
