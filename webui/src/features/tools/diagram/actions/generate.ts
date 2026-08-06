@@ -25,7 +25,9 @@ export async function generateDiagramAction(
     instruction: input.instruction,
   };
   if (input.context.trim()) payload.context = input.context.trim();
-  if (input.existing_code.trim()) payload.existing_code = input.existing_code.trim();
+  const existingCode =
+    input.format === "drawio" ? input.existing_drawio.trim() : input.existing_mermaid.trim();
+  if (existingCode) payload.existing_code = existingCode;
   safeParse(DiagramRequestSchema, payload, "Invalid diagram payload");
 
   const raw = await postJson<unknown>(

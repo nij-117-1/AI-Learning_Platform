@@ -13,7 +13,8 @@ export const DiagramFormSchema = z.object({
   format: DiagramFormatSchema.default("mermaid"),
   instruction: z.string().trim().min(1, "Instruction is required").max(2000),
   context: z.string().trim().max(2000).default(""),
-  existing_code: z.string().trim().max(20000).default(""),
+  existing_mermaid: z.string().trim().max(20000).default(""),
+  existing_drawio: z.string().trim().max(20000).default(""),
 });
 export type DiagramFormValues = z.infer<typeof DiagramFormSchema>;
 
