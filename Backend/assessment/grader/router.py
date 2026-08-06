@@ -4,7 +4,7 @@ from typing import NoReturn, Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 
 from assessment.grader.dependencies import get_grader_service, verify_api_key
-from assessment.grader.schemas import EXPECTED_LEVELS, GradingPayload, GradingResponse
+from assessment.grader.schemas import GradingPayload, GradingResponse
 from assessment.grader.services import GraderError, GraderService, InvalidImageError
 
 logger = logging.getLogger(__name__)
@@ -54,7 +54,7 @@ async def evaluate_submission(
     scenario: str = Form(..., description="The context of the task"),
     question_asked: str = Form(..., description="The specific question the user is answering"),
     target_objective: str = Form(..., description="The goal the user needs to achieve"),
-    expected_level: str = Form(..., description="Required depth: beginner, intermediate, or expert"),
+    expected_level: str = Form(..., description="Required depth, any value accepted"),
     user_answer_text: Optional[str] = Form(None, description="The textual part of the user's response"),
     image: Optional[UploadFile] = File(None, description="The visual part of the user's response"),
     service: GraderService = Depends(get_grader_service),
@@ -68,7 +68,7 @@ async def evaluate_submission(
         scenario: The context of the task.
         question_asked: The specific question the user answered.
         target_objective: The goal the user needed to achieve.
-        expected_level: Required depth (beginner, intermediate, expert).
+        expected_level: Required depth (any string value).
         user_answer_text: Optional textual part of the answer.
         image: Optional image part of the answer.
         service: Injected grader service.
@@ -81,12 +81,6 @@ async def evaluate_submission(
         GraderValidationError: If the form data or upload is invalid.
         GraderProcessingError: If the grading pipeline fails.
     """
-    if expected_level not in EXPECTED_LEVELS:
-        raise GraderValidationError(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"expected_level must be one of: {', '.join(EXPECTED_LEVELS)}",
-        )
-
     answer_text = user_answer_text.strip() if user_answer_text and user_answer_text.strip() else None
 
     image_bytes = None

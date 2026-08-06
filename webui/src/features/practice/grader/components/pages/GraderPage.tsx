@@ -11,10 +11,11 @@ import { ExplainerPageShell } from "@/features/learning/explainer/components/Exp
 import { DraftStatus } from "@/features/learning/explainer/components/DraftStatus";
 import { FormActions } from "@/features/learning/explainer/components/FormActions";
 import { EmptyResult } from "@/features/learning/explainer/components/EmptyResult";
-import { InputField, SelectField, TextareaField } from "@/features/learning/explainer/components/fields";
+import { InputField, TextareaField } from "@/features/learning/explainer/components/fields";
 import type { FieldOption } from "@/features/learning/explainer/components/fields";
 import { usePersistedForm } from "@/features/learning/explainer/hooks/usePersistedForm";
 import { useToolRequest } from "@/features/learning/explainer/hooks/useToolRequest";
+import { CustomSelectField } from "@/features/practice/components/fields/CustomSelectField";
 import { FileUploadField } from "@/features/tools/components/FileUploadField";
 import { evaluateSubmissionAction } from "../../actions/evaluate";
 import { GraderFormSchema, type GraderFormValues, type GradingResponse } from "../../types";
@@ -108,7 +109,7 @@ export function GraderPage() {
             {...persisted.form.register("target_objective")}
             error={errors.target_objective?.message}
           />
-          <SelectField
+          <CustomSelectField
             label="Expected Level"
             name="expected_level"
             htmlFor="grader_level"
@@ -116,6 +117,7 @@ export function GraderPage() {
             options={expectedLevelOptions}
             disabled={tool.isPending}
             error={errors.expected_level?.message}
+            customPlaceholder="e.g. master-level"
           />
           <TextareaField
             label="Your Answer (optional if you attach an image)"

@@ -14,7 +14,7 @@ import { ExplainerPageShell } from "../ExplainerPageShell";
 import { DraftStatus } from "../DraftStatus";
 import { FormActions } from "../FormActions";
 import { EmptyResult } from "../EmptyResult";
-import { InputField, SelectField, TextareaField } from "../fields";
+import { InputField, SelectField, CustomSelectField, TextareaField } from "../fields";
 import { SocraticResult } from "../results/SocraticResult";
 import { expertiseLevelOptions, questionCategoryOptions, numQuestionsOptions } from "../../lib/options";
 
@@ -84,7 +84,7 @@ export function SocraticToolPage() {
             error={errors.user_instructions?.message}
           />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <SelectField
+            <CustomSelectField
               label="Level"
               name="level"
               htmlFor="level"
@@ -92,6 +92,7 @@ export function SocraticToolPage() {
               options={expertiseLevelOptions}
               disabled={tool.isPending}
               error={errors.level?.message}
+              customPlaceholder="e.g. graduate"
             />
             <SelectField
               label="Number of Questions"
@@ -103,7 +104,7 @@ export function SocraticToolPage() {
               error={errors.num_questions?.message}
             />
           </div>
-          <SelectField
+          <CustomSelectField
             label="Question Category"
             name="question_category"
             htmlFor="question_category"
@@ -111,6 +112,7 @@ export function SocraticToolPage() {
             options={questionCategoryOptions}
             disabled={tool.isPending}
             error={errors.question_category?.message}
+            customPlaceholder="e.g. analogy-first"
           />
           <FormActions
             isPending={tool.isPending}

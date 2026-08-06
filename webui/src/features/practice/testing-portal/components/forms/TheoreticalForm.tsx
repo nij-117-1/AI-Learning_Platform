@@ -6,21 +6,25 @@
  */
 "use client";
 
+import { useRef } from "react";
 import { FileQuestion } from "lucide-react";
 import { ExplainerPageShell } from "@/features/learning/explainer/components/ExplainerPageShell";
 import { DraftStatus } from "@/features/learning/explainer/components/DraftStatus";
 import { FormActions } from "@/features/learning/explainer/components/FormActions";
 import { EmptyResult } from "@/features/learning/explainer/components/EmptyResult";
-import { InputField, SelectField, SliderField, TextareaField } from "@/features/learning/explainer/components/fields";
+import { InputField, SliderField, TextareaField } from "@/features/learning/explainer/components/fields";
 import { usePersistedForm } from "@/features/learning/explainer/hooks/usePersistedForm";
 import { useToolRequest } from "@/features/learning/explainer/hooks/useToolRequest";
 import { generateTheoreticalAction } from "../../actions/generateTheoretical";
 import {
   TheoreticalFormSchema,
   type TheoreticalFormValues,
+  type TheoreticalItem,
   type TheoreticalResponse,
 } from "../../types";
 import { theoreticalDifficultyLevelOptions, theoreticalQuestionTypeOptions } from "../../lib/options";
+import { splitPastQuestions } from "../../lib/pastQuestions";
+import { CustomSelectField } from "@/features/practice/components/fields/CustomSelectField";
 import { TheoreticalResult } from "../results/TheoreticalResult";
 
 const STORAGE_KEY = "practice.testing-portal.theoretical.v1";
@@ -47,8 +51,32 @@ export function TheoreticalForm() {
     onSuccess: persisted.setResult,
   });
 
+  const pendingAppend = useRef<TheoreticalItem[] | null>(null);
+  const appendTool = useToolRequest<TheoreticalFormValues, TheoreticalResponse>({
+    run: async (values) => {
+      const previous = pendingAppend.current;
+      pendingAppend.current = null;
+      const next = await generateTheoreticalAction(values);
+      return previous && previous.length > 0
+        ? { ...next, questions: [...previous, ...next.questions] }
+        : next;
+    },
+    onSuccess: persisted.setResult,
+  });
+
+  const busy = tool.isPending || appendTool.isPending;
   const errors = persisted.form.formState.errors;
-  const result = tool.data ?? persisted.result;
+  const result = appendTool.data ?? tool.data ?? persisted.result;
+
+  const handleGenerateMore = () => {
+    const current = appendTool.data ?? tool.data ?? persisted.result;
+    if (!current || current.questions.length === 0) return;
+    const existing = splitPastQuestions(persisted.form.getValues("past_questions"));
+    const questions = current.questions.map((item) => item.question_text);
+    pendingAppend.current = current.questions;
+    persisted.form.setValue("past_questions", Array.from(new Set([...existing, ...questions])).join("\n"));
+    appendTool.execute(persisted.form.getValues());
+  };
 
   return (
     <ExplainerPageShell
@@ -59,7 +87,7 @@ export function TheoreticalForm() {
           status={persisted.status}
           onReset={persisted.resetDraft}
           onClear={persisted.clearDraft}
-          disabled={tool.isPending}
+          disabled={busy}
         />
       }
       form={
@@ -68,28 +96,30 @@ export function TheoreticalForm() {
             label="Topic"
             htmlFor="theo_topic"
             placeholder="e.g. Microservices"
-            disabled={tool.isPending}
+            disabled={busy}
             {...persisted.form.register("topic")}
             error={errors.topic?.message}
           />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <SelectField
+            <CustomSelectField
               label="Question Type"
               name="question_type"
               htmlFor="theo_question_type"
               control={persisted.form.control}
               options={theoreticalQuestionTypeOptions}
-              disabled={tool.isPending}
+              disabled={busy}
               error={errors.question_type?.message}
+              customPlaceholder="e.g. design-decision"
             />
-            <SelectField
+            <CustomSelectField
               label="Difficulty"
               name="difficulty_level"
               htmlFor="theo_difficulty"
               control={persisted.form.control}
               options={theoreticalDifficultyLevelOptions}
-              disabled={tool.isPending}
+              disabled={busy}
               error={errors.difficulty_level?.message}
+              customPlaceholder="e.g. staff-level"
             />
           </div>
           <SliderField
@@ -100,13 +130,13 @@ export function TheoreticalForm() {
             min={1}
             max={5}
             formatValue={(value) => `${value} question${value === 1 ? "" : "s"}`}
-            disabled={tool.isPending}
+            disabled={busy}
           />
           <InputField
             label="Context Setting"
             htmlFor="theo_context"
             placeholder="e.g. High-Tech Enterprise Interview"
-            disabled={tool.isPending}
+            disabled={busy}
             {...persisted.form.register("context_setting")}
             error={errors.context_setting?.message}
           />
@@ -114,7 +144,7 @@ export function TheoreticalForm() {
             label="Source Context (optional)"
             htmlFor="theo_source"
             placeholder="Paste source text or data to analyze."
-            disabled={tool.isPending}
+            disabled={busy}
             {...persisted.form.register("source_context")}
             error={errors.source_context?.message}
           />
@@ -122,15 +152,15 @@ export function TheoreticalForm() {
             label="Custom Instructions (optional)"
             htmlFor="theo_instructions"
             placeholder="e.g. Focus on speed vs consistency."
-            disabled={tool.isPending}
+            disabled={busy}
             {...persisted.form.register("custom_instructions")}
             error={errors.custom_instructions?.message}
           />
           <TextareaField
             label="Past Questions (optional)"
             htmlFor="theo_past"
-            placeholder="Previous questions to ensure variety."
-            disabled={tool.isPending}
+            placeholder="One question per line — previous questions to ensure variety."
+            disabled={busy}
             {...persisted.form.register("past_questions")}
             error={errors.past_questions?.message}
           />
@@ -148,6 +178,8 @@ export function TheoreticalForm() {
             result={result}
             contextSetting={persisted.form.getValues("context_setting")}
             difficultyLevel={persisted.form.getValues("difficulty_level")}
+            onGenerateMore={handleGenerateMore}
+            isGeneratingMore={appendTool.isPending}
           />
         ) : (
           <EmptyResult

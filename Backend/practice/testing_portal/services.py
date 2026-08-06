@@ -1,10 +1,10 @@
-import json
 import logging
 import uuid
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Optional
 
 import dspy
 
+from core.config import settings
 from core.dspy_utils import build_lm, run_predictor
 from practice.testing_portal.schemas import (
     AnswerRequest,
@@ -40,7 +40,7 @@ class MCQGenerator(dspy.Signature):
         description="A unique UUID or seed to ensure randomness in the generation process."
     )
     topic: str = dspy.InputField(description="The subject or specific topic for the questions.")
-    question_type: Literal["academic", "practical", "scenario-based", "conceptual", "recall"] = dspy.InputField(
+    question_type: str = dspy.InputField(
         description="""
         The style of questions:
         - academic: Focus on theory and textbook definitions.
@@ -50,7 +50,7 @@ class MCQGenerator(dspy.Signature):
         """
     )
     num_questions: int = dspy.InputField(description="The number of MCQs to generate.")
-    difficulty_level: Literal["beginner", "intermediate", "advanced", "expert"] = dspy.InputField(
+    difficulty_level: str = dspy.InputField(
         description="The complexity level of the questions."
     )
     context_setting: str = dspy.InputField(
@@ -85,7 +85,7 @@ class TheoreticalQuestionGenerator(dspy.Signature):
         description="A unique UUID or seed to ensure randomness in the generation process."
     )
     topic: str = dspy.InputField(description="The subject or specific domain for the questions.")
-    question_type: Literal["academic", "practical", "case-study", "philosophical", "architectural"] = dspy.InputField(
+    question_type: str = dspy.InputField(
         description="""
         The style of the theoretical question:
         - academic: Focus on foundational principles and formal theories.
@@ -104,7 +104,7 @@ class TheoreticalQuestionGenerator(dspy.Signature):
         description="Previously generated questions to ensure variety.",
     )
     num_questions: int = dspy.InputField(description="The number of questions to generate.")
-    difficulty_level: Literal["basic", "intermediate", "advanced", "architectural"] = dspy.InputField(
+    difficulty_level: str = dspy.InputField(
         description="The depth and complexity of the questions."
     )
     context_setting: str = dspy.InputField(
@@ -134,7 +134,7 @@ class TheoreticalAnswerGenerator(dspy.Signature):
     question: str = dspy.InputField(description="The theoretical/descriptive question to answer.")
     context: str = dspy.InputField(description="The setting (e.g., 'Job Interview', 'Academic Exam', 'Internal Training').")
     difficulty_level: str = dspy.InputField(description="The complexity level of the expected answer.")
-    response_format: Literal["bullet_points", "paragraph", "step_by_step", "technical_whitepaper"] = dspy.InputField(
+    response_format: str = dspy.InputField(
         description="The structural style of the response."
     )
     custom_instructions: Optional[str] = dspy.InputField(
@@ -158,7 +158,7 @@ class MCQDetailedAnswerGenerator(dspy.Signature):
     options: Dict[str, str] = dspy.InputField(description="A dictionary of options (e.g., {'A': 'text', 'B': 'text'}).")
     context_setting: Optional[str] = dspy.InputField(default=None, description="The scenario for the question (e.g., University Exam).")
 
-    correct_option: Literal["A", "B", "C", "D"] = dspy.OutputField(description="The letter of the correct option.")
+    correct_option: str = dspy.OutputField(description="The letter of the correct option.")
     reasoning: str = dspy.OutputField(description="A brief explanation of the correct answer and logic.")
 
 
@@ -169,44 +169,23 @@ class TestingPortalService:
         self.lm = build_lm(temperature=0.5)
 
     @staticmethod
-    def _parse_json_past_questions(past_questions: Optional[str]) -> str:
+    def _extract_past_questions(past_questions: Optional[List[str]]) -> str:
         """
-        Extracts the last 8 question texts from a JSON array payload.
+        Extracts question texts from a list payload and keeps only the last N.
 
         Args:
-            past_questions: Raw past-questions payload, if any.
+            past_questions: Previously generated question strings.
 
         Returns:
-            str: The trimmed, newline-joined past questions. Falls back to the
-            raw string when it cannot be parsed as JSON.
+            str: The trimmed, newline-joined past questions. Empty string when
+            no questions are provided. The number of questions kept is bounded
+            by settings.PAST_QUESTIONS_LIMIT.
         """
         if not past_questions:
             return ""
 
-        try:
-            questions_list = json.loads(past_questions)
-            texts = [item.get("question_text", "") for item in questions_list if isinstance(item, dict) and "question_text" in item]
-            return "\n".join(texts[-8:])
-        except (json.JSONDecodeError, TypeError):
-            logger.warning("past_questions was not valid JSON; passing it through verbatim")
-            return past_questions
-
-    @staticmethod
-    def _trim_text_past_questions(past_questions: Optional[str]) -> str:
-        """
-        Reduces a plain-text block of past questions to the last 8 entries.
-
-        Args:
-            past_questions: Raw past-questions payload, if any.
-
-        Returns:
-            str: The last 8 question blocks joined back into a single string.
-        """
-        if not past_questions:
-            return ""
-
-        blocks = [block.strip() for block in past_questions.split("\n\n") if block.strip()]
-        return "\n\n".join(blocks[-8:])
+        texts: List[str] = [text.strip() for text in past_questions if text and text.strip()]
+        return "\n".join(texts[-settings.PAST_QUESTIONS_LIMIT:])
 
     async def generate_mcqs(self, data: MCQRequest) -> MCQResponse:
         """
@@ -222,7 +201,7 @@ class TestingPortalService:
             GenerationError: If the DSPy pipeline fails to produce questions.
         """
         try:
-            cleaned_past = self._parse_json_past_questions(data.past_questions)
+            cleaned_past = self._extract_past_questions(data.past_questions)
             result = run_predictor(
                 MCQGenerator,
                 self.lm,
@@ -255,7 +234,7 @@ class TestingPortalService:
             GenerationError: If the DSPy pipeline fails to produce questions.
         """
         try:
-            cleaned_past = self._trim_text_past_questions(data.past_questions)
+            cleaned_past = self._extract_past_questions(data.past_questions)
             result = run_predictor(
                 TheoreticalQuestionGenerator,
                 self.lm,

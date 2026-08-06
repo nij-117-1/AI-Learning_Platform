@@ -1,17 +1,5 @@
-import { Metadata } from "next";
-import { SetPageTitle } from "@/features/navigation/components/SetPageTitle";
-import { CurriculumToolPage } from "@/features/learning/explainer/components/pages/CurriculumToolPage";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Curriculum Path | Learning",
-  description: "Initialize a personalized learning roadmap that finds the crux of mastery.",
-};
-
-export default function CurriculumRoutePage() {
-  return (
-    <>
-      <SetPageTitle title="Curriculum Path" />
-      <CurriculumToolPage />
-    </>
-  );
+export default function CurriculumRedirectPage() {
+  redirect("/learning/explainer?tool=curriculum");
 }

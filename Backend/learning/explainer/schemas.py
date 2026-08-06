@@ -1,16 +1,10 @@
-from typing import List, Optional, Literal
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
-EXPERTISE_LEVELS = Literal["beginner", "intermediate", "expert"]
-SOCRATIC_LEVELS = Literal["beginner", "intermediate", "advanced", "expert"]
-EXPLANATION_STYLES = Literal["academic", "practical", "with examples", "conceptual"]
-QUESTION_CATEGORIES = Literal[
-    "conceptual-bridge",
-    "counterfactual",
-    "first-principles",
-    "applied-case-study",
-    "reductio-ad-absurdum",
-]
+EXPERTISE_LEVELS = str
+SOCRATIC_LEVELS = str
+EXPLANATION_STYLES = str
+QUESTION_CATEGORIES = str
 
 
 class ExplanationRequest(BaseModel):
@@ -35,8 +29,8 @@ class TutorialRequest(BaseModel):
     """Request model for a full A-to-Z Markdown tutorial."""
 
     topic: str = Field(..., example="FastAPI Architecture")
-    expertise_level: EXPERTISE_LEVELS = Field(..., description="Target audience knowledge level.")
-    explanation_style: Literal["academic", "practical", "with examples"] = Field(
+    expertise_level: EXPERTISE_LEVELS = Field(..., description="Target audience knowledge level (any value accepted).")
+    explanation_style: str = Field(
         ..., description="The format or lens used for the explanation."
     )
 

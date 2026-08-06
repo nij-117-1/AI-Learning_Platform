@@ -7,7 +7,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -34,6 +34,9 @@ import { tutorTools } from "@/features/learning/lib/tutor-tools";
 
 export function LearningSidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeExplainerTool = searchParams.get("tool");
+  const explainerActive = pathname === "/learning/explainer";
 
   return (
     <Sidebar collapsible="icon" variant="sidebar">
@@ -55,7 +58,11 @@ export function LearningSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === "/learning/explainer"} tooltip="All tools">
+                <SidebarMenuButton
+                  asChild
+                  isActive={explainerActive && !activeExplainerTool}
+                  tooltip="All tools"
+                >
                   <Link href="/learning/explainer">
                     <LayoutGrid />
                     <span>All Tools</span>
@@ -63,7 +70,7 @@ export function LearningSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {explainerTools.map((tool) => {
-                const isActive = pathname === tool.href;
+                const isActive = explainerActive && activeExplainerTool === tool.id;
                 return (
                   <SidebarMenuItem key={tool.id}>
                     <SidebarMenuButton asChild isActive={isActive} tooltip={tool.shortTitle}>

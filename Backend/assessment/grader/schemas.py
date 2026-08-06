@@ -1,9 +1,8 @@
-from typing import List, Literal, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-EXPECTED_LEVELS = ("beginner", "intermediate", "expert")
-EXPECTED_LEVEL = Literal["beginner", "intermediate", "expert"]
+EXPECTED_LEVEL = str
 
 
 class GradingPayload(BaseModel):

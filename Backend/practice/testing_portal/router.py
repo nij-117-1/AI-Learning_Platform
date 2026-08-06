@@ -4,6 +4,7 @@ from typing import NoReturn
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.security import verify_api_key
+from core.tracing import log_api_trace
 from practice.testing_portal.dependencies import get_testing_service
 from practice.testing_portal.schemas import (
     AnswerRequest,
@@ -69,7 +70,9 @@ async def generate_mcq(
         TestingPortalProcessingError: If the underlying pipeline fails.
     """
     try:
-        return await service.generate_mcqs(payload)
+        result = await service.generate_mcqs(payload)
+        log_api_trace("Testing portal | generate-mcq", payload, result, logger)
+        return result
     except TestingPortalError as exc:
         _raise_processing_error("generate MCQs", exc)
 
@@ -95,7 +98,9 @@ async def generate_theoretical(
         TestingPortalProcessingError: If the underlying pipeline fails.
     """
     try:
-        return await service.generate_theoretical(payload)
+        result = await service.generate_theoretical(payload)
+        log_api_trace("Testing portal | generate-theoretical", payload, result, logger)
+        return result
     except TestingPortalError as exc:
         _raise_processing_error("generate theoretical questions", exc)
 
@@ -122,7 +127,9 @@ async def generate_answer(
         TestingPortalProcessingError: If the underlying pipeline fails.
     """
     try:
-        return await service.generate_answer(payload)
+        result = await service.generate_answer(payload)
+        log_api_trace("Testing portal | generate-answer", payload, result, logger)
+        return result
     except TestingPortalError as exc:
         _raise_processing_error("generate the SME answer", exc)
 
@@ -149,6 +156,8 @@ async def solve_mcq(
         TestingPortalProcessingError: If the underlying pipeline fails.
     """
     try:
-        return await service.solve_mcq(payload)
+        result = await service.solve_mcq(payload)
+        log_api_trace("Testing portal | solve-mcq", payload, result, logger)
+        return result
     except TestingPortalError as exc:
         _raise_processing_error("solve the MCQ", exc)

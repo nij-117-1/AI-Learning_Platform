@@ -14,7 +14,7 @@ import { ExplainerPageShell } from "../ExplainerPageShell";
 import { DraftStatus } from "../DraftStatus";
 import { FormActions } from "../FormActions";
 import { EmptyResult } from "../EmptyResult";
-import { InputField, SelectField, TextareaField } from "../fields";
+import { InputField, CustomSelectField, TextareaField } from "../fields";
 import { CurriculumResult } from "../results/CurriculumResult";
 import { userLevelOptions } from "../../lib/options";
 
@@ -83,7 +83,7 @@ export function CurriculumToolPage() {
             {...persisted.form.register("past_learning")}
             error={errors.past_learning?.message}
           />
-          <SelectField
+          <CustomSelectField
             label="Your Level"
             name="user_level"
             htmlFor="user_level"
@@ -91,6 +91,7 @@ export function CurriculumToolPage() {
             options={userLevelOptions}
             disabled={tool.isPending}
             error={errors.user_level?.message}
+            customPlaceholder="e.g. self-taught"
           />
           <TextareaField
             label="What You Want to Achieve Today"

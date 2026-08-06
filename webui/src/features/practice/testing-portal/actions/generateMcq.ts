@@ -14,9 +14,12 @@ import {
   type McqResponse,
 } from "../types";
 import { postJson, safeParse, practiceApiUrl } from "../../lib/api";
+import { splitPastQuestions } from "../lib/pastQuestions";
 
 export async function generateMcqAction(input: McqFormValues): Promise<McqResponse> {
   safeParse(McqFormSchema, input, "Invalid MCQ request");
+
+  const pastQuestions = splitPastQuestions(input.past_questions);
 
   const payload: McqRequest = {
     topic: input.topic,
@@ -28,8 +31,8 @@ export async function generateMcqAction(input: McqFormValues): Promise<McqRespon
   if (input.custom_instructions.trim()) {
     payload.custom_instructions = input.custom_instructions.trim();
   }
-  if (input.past_questions.trim()) {
-    payload.past_questions = input.past_questions.trim();
+  if (pastQuestions.length > 0) {
+    payload.past_questions = pastQuestions;
   }
   safeParse(McqRequestSchema, payload, "Invalid MCQ payload");
 

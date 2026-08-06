@@ -14,7 +14,7 @@ import { ExplainerPageShell } from "../ExplainerPageShell";
 import { DraftStatus } from "../DraftStatus";
 import { FormActions } from "../FormActions";
 import { EmptyResult } from "../EmptyResult";
-import { InputField, SelectField, TextareaField } from "../fields";
+import { InputField, CustomSelectField, TextareaField } from "../fields";
 import { ExplainResult } from "../results/ExplainResult";
 import { expertiseLevelOptions } from "../../lib/options";
 
@@ -64,7 +64,7 @@ export function ExplainToolPage() {
             {...persisted.form.register("topic")}
             error={errors.topic?.message}
           />
-          <SelectField
+          <CustomSelectField
             label="Expertise Level"
             name="expertise_level"
             htmlFor="expertise_level"
@@ -72,6 +72,7 @@ export function ExplainToolPage() {
             options={expertiseLevelOptions}
             disabled={tool.isPending}
             error={errors.expertise_level?.message}
+            customPlaceholder="e.g. postgraduate"
           />
           <TextareaField
             label="Context (optional)"

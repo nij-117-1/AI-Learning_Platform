@@ -1,123 +1,93 @@
 // src/features/practice/testing-portal/components/quiz/McqQuiz.tsx
 /**
- * Interactive MCQ quiz. Users pick an answer for each generated question,
- * then Check Answers reveals correctness (using the provided key) and score.
+ * Interactive MCQ quiz with instant right/wrong feedback on every option
+ * click. Supports both "list" (scroll) and "one by one" (step) view modes
+ * with a live score. All question cards stay mounted so per-question state
+ * (selections, AI rechecks) survives mode switching.
  */
 "use client";
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { CheckCircle2, RefreshCcw, XCircle } from "lucide-react";
+import { RefreshCcw, Trophy } from "lucide-react";
 import type { McqItem } from "../../types";
+import { ViewModeToggle, type ViewMode } from "./ViewModeToggle";
+import { StepNavigator } from "./StepNavigator";
+import { McqQuestionCard } from "./McqQuestionCard";
 
-const OPTION_KEYS = ["A", "B", "C", "D"] as const;
+interface McqQuizProps {
+  questions: McqItem[];
+  contextSetting?: string;
+}
 
-export function McqQuiz({ questions }: { questions: McqItem[] }) {
+export function McqQuiz({ questions, contextSetting }: McqQuizProps) {
+  const [mode, setMode] = useState<ViewMode>("list");
+  const [activeIndex, setActiveIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [checked, setChecked] = useState(false);
+  const [prevQuestions, setPrevQuestions] = useState(questions);
+
+  if (prevQuestions !== questions) {
+    setPrevQuestions(questions);
+    setActiveIndex(0);
+    setAnswers({});
+  }
 
   const score = questions.reduce(
-    (total, question, index) =>
-      total + (answers[index] === question.correct_answer ? 1 : 0),
+    (total, question, index) => total + (answers[index] === question.correct_answer ? 1 : 0),
     0
   );
+  const answeredCount = questions.filter((_, index) => answers[index] !== undefined).length;
+  const allAnswered = answeredCount === questions.length;
 
-  const handleCheck = () => setChecked(true);
-  const handleReset = () => {
-    setAnswers({});
-    setChecked(false);
-  };
+  const handleSelect = (index: number, option: string) =>
+    setAnswers((prev) => ({ ...prev, [index]: option }));
 
-  const allAnswered = questions.every((_, index) => answers[index]);
+  const handleReset = () => setAnswers({});
 
   return (
     <div className="space-y-4">
-      {checked && (
-        <Card className={cn(score === questions.length && "border-emerald-500/40")}>
-          <CardContent className="flex items-center justify-between p-4">
-            <p className="text-sm font-medium">
-              Score: {score} / {questions.length}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <ViewModeToggle mode={mode} onChange={setMode} />
+        <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
+          Score: {score}/{questions.length}
+        </span>
+      </div>
+
+      {mode === "step" && (
+        <StepNavigator
+          index={activeIndex}
+          total={questions.length}
+          onPrevious={() => setActiveIndex((index) => Math.max(0, index - 1))}
+          onNext={() => setActiveIndex((index) => Math.min(questions.length - 1, index + 1))}
+        />
+      )}
+
+      {questions.map((question, index) => (
+        <div key={index} hidden={mode === "step" && index !== activeIndex}>
+          <McqQuestionCard
+            index={index}
+            question={question}
+            selected={answers[index]}
+            onSelect={(option) => handleSelect(index, option)}
+            contextSetting={contextSetting}
+          />
+        </div>
+      ))}
+
+      {allAnswered && (
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <Trophy className="h-5 w-5 text-amber-500" />
+              You answered {score} of {questions.length} correctly.
             </p>
-            <Button type="button" variant="outline" size="sm" onClick={handleReset}>
+            <Button type="button" variant="outline" size="sm" onClick={handleReset} className="gap-2">
               <RefreshCcw className="h-4 w-4" />
-              Try Again
+              Try again
             </Button>
           </CardContent>
         </Card>
-      )}
-
-      {questions.map((question, index) => {
-        const selected = answers[index];
-        const isCorrect = checked && selected === question.correct_answer;
-        const isWrong = checked && selected !== undefined && selected !== question.correct_answer;
-        const unanswered = checked && selected === undefined;
-
-        return (
-          <Card key={index}>
-            <CardContent className="space-y-3 p-5">
-              <div className="flex items-start gap-2">
-                <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                  {index + 1}
-                </span>
-                <div className="space-y-3">
-                  <p className="font-medium">{question.question_text}</p>
-                  {isCorrect && (
-                    <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="h-4 w-4" />
-                      Correct — {question.correct_answer}
-                    </p>
-                  )}
-                  {isWrong && (
-                    <p className="flex items-center gap-1.5 text-sm font-medium text-red-600 dark:text-red-400">
-                      <XCircle className="h-4 w-4" />
-                      Correct answer: {question.correct_answer}
-                    </p>
-                  )}
-                  {unanswered && (
-                    <p className="text-sm text-muted-foreground">Not answered</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid gap-2">
-                {OPTION_KEYS.map((key) => {
-                  const isSelected = selected === key;
-                  const isKeyCorrect = checked && question.correct_answer === key;
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      disabled={checked}
-                      onClick={() => setAnswers((prev) => ({ ...prev, [index]: key }))}
-                      className={cn(
-                        "flex items-start gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors",
-                        "hover:border-primary/50",
-                        isSelected && "border-primary bg-primary/5",
-                        isKeyCorrect && "border-emerald-500/60 bg-emerald-500/10",
-                        isSelected && isKeyCorrect && "border-emerald-500/60 bg-emerald-500/10",
-                        isSelected && !isKeyCorrect && checked && "border-red-500/60 bg-red-500/10",
-                        checked && "cursor-default"
-                      )}
-                    >
-                      <span className="flex size-5 shrink-0 items-center justify-center rounded-full border text-xs font-semibold">
-                        {key}
-                      </span>
-                      <span>{question.options[key]}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
-
-      {!checked && (
-        <Button type="button" size="lg" disabled={!allAnswered} onClick={handleCheck} className="w-full">
-          Check Answers
-        </Button>
       )}
     </div>
   );

@@ -14,7 +14,7 @@ import { ExplainerPageShell } from "../ExplainerPageShell";
 import { DraftStatus } from "../DraftStatus";
 import { FormActions } from "../FormActions";
 import { EmptyResult } from "../EmptyResult";
-import { InputField, SelectField } from "../fields";
+import { InputField, CustomSelectField } from "../fields";
 import { AtozResult } from "../results/AtozResult";
 import { expertiseLevelOptions, explanationStyleOptions } from "../../lib/options";
 
@@ -64,7 +64,7 @@ export function AtozToolPage() {
             {...persisted.form.register("topic")}
             error={errors.topic?.message}
           />
-          <SelectField
+          <CustomSelectField
             label="Expertise Level"
             name="expertise_level"
             htmlFor="expertise_level"
@@ -72,8 +72,9 @@ export function AtozToolPage() {
             options={expertiseLevelOptions}
             disabled={tool.isPending}
             error={errors.expertise_level?.message}
+            customPlaceholder="e.g. postgraduate"
           />
-          <SelectField
+          <CustomSelectField
             label="Explanation Style"
             name="explanation_style"
             htmlFor="explanation_style"
@@ -81,6 +82,7 @@ export function AtozToolPage() {
             options={explanationStyleOptions}
             disabled={tool.isPending}
             error={errors.explanation_style?.message}
+            customPlaceholder="e.g. history-first"
           />
           <FormActions
             isPending={tool.isPending}

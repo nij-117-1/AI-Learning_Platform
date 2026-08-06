@@ -52,16 +52,16 @@ export async function evaluateSubmissionAction(
   return safeParse(GradingResponseSchema, raw, "Invalid grading response");
 }
 
-/** Grades a textual answer from the Theoretical question page. */
+/** Grades a textual (and optionally image) answer from the Theoretical question page. */
 export async function evaluateTheoreticalAnswerAction(
   payload: TheoreticalGradingPayload
 ): Promise<GradingResponse> {
   safeParse(ExpectedLevelSchema, payload.expected_level, "Invalid expected level");
-  if (!payload.user_answer_text.trim()) {
-    throw new Error("Write an answer before evaluating it.");
+  if (!payload.user_answer_text.trim() && !payload.image) {
+    throw new Error("Provide either an answer or an image to grade.");
   }
 
-  const formData = await buildFormData(payload, null);
+  const formData = await buildFormData(payload, payload.image ?? null);
   const raw = await postFormData<unknown>(
     assessmentApiUrl("/assessment/grader", "evaluate"),
     formData

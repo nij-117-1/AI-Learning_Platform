@@ -6,7 +6,14 @@
 import { z } from "zod";
 
 export const expectedLevels = ["beginner", "intermediate", "expert"] as const;
-export const ExpectedLevelSchema = z.enum(expectedLevels);
+
+// The backend accepts any value for `expected_level` ("any value accepted"),
+// so the schema is a free-form string with a suggested preset list above.
+export const ExpectedLevelSchema = z
+  .string()
+  .trim()
+  .min(1, "Expected level is required")
+  .max(100, "Expected level is too long");
 export type ExpectedLevel = z.infer<typeof ExpectedLevelSchema>;
 
 export const GradingResponseSchema = z.object({
@@ -37,6 +44,7 @@ export interface TheoreticalGradingPayload {
   scenario: string;
   question_asked: string;
   target_objective: string;
-  expected_level: ExpectedLevel;
+  expected_level: string;
   user_answer_text: string;
+  image?: File | null;
 }

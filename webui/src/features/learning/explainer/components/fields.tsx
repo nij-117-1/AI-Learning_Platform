@@ -7,7 +7,14 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Controller, type Control, type FieldValues, type Path } from "react-hook-form";
+import { useState } from "react";
+import {
+  Controller,
+  useWatch,
+  type Control,
+  type FieldValues,
+  type Path,
+} from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -146,6 +153,104 @@ export function SelectField<TFieldValues extends FieldValues>({
             </SelectContent>
           </Select>
         )}
+      />
+    </FieldWrap>
+  );
+}
+
+const CUSTOM_VALUE = "__custom__";
+
+interface CustomSelectFieldProps<TFieldValues extends FieldValues> {
+  label: string;
+  name: Path<TFieldValues>;
+  htmlFor: string;
+  control: Control<TFieldValues>;
+  options: FieldOption[];
+  error?: string;
+  hint?: string;
+  disabled?: boolean;
+  placeholder?: string;
+  customLabel?: string;
+  customPlaceholder?: string;
+}
+
+/**
+ * Select field with an extra "Other / Custom" option. Picking it reveals a
+ * text input so users can submit arbitrary values (the API accepts any string).
+ */
+export function CustomSelectField<TFieldValues extends FieldValues>({
+  label,
+  name,
+  htmlFor,
+  control,
+  options,
+  error,
+  hint,
+  disabled,
+  placeholder = "Select an option",
+  customLabel = "Other / Custom",
+  customPlaceholder = "Enter a custom value",
+}: CustomSelectFieldProps<TFieldValues>) {
+  const [pickedCustom, setPickedCustom] = useState(false);
+  const watchedValue = useWatch({ control, name });
+
+  if (
+    pickedCustom &&
+    watchedValue !== "" &&
+    options.some((option) => option.value === watchedValue)
+  ) {
+    setPickedCustom(false);
+  }
+
+  const isPresetValue = (value: string) =>
+    value !== "" && options.some((option) => option.value === value);
+
+  return (
+    <FieldWrap label={label} htmlFor={htmlFor} error={error} hint={hint}>
+      <Controller
+        name={name}
+        control={control}
+        render={({ field }) => {
+          const isCustom = pickedCustom || (field.value !== "" && !isPresetValue(field.value));
+          return (
+            <div className="space-y-2">
+              <Select
+                value={isCustom ? CUSTOM_VALUE : field.value}
+                onValueChange={(value) => {
+                  if (value === CUSTOM_VALUE) {
+                    setPickedCustom(true);
+                    field.onChange("");
+                  } else {
+                    setPickedCustom(false);
+                    field.onChange(value);
+                  }
+                }}
+                disabled={disabled}
+              >
+                <SelectTrigger id={htmlFor} className="w-full" aria-invalid={!!error}>
+                  <SelectValue placeholder={placeholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {options.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value={CUSTOM_VALUE}>{customLabel}</SelectItem>
+                </SelectContent>
+              </Select>
+              {isCustom && (
+                <Input
+                  className="bg-transparent"
+                  placeholder={customPlaceholder}
+                  value={field.value}
+                  onChange={(event) => field.onChange(event.target.value)}
+                  disabled={disabled}
+                />
+              )}
+            </div>
+          );
+        }}
       />
     </FieldWrap>
   );

@@ -5,32 +5,6 @@
  */
 import { z } from "zod";
 
-const mcqQuestionTypes = [
-  "academic",
-  "practical",
-  "scenario-based",
-  "conceptual",
-  "recall",
-] as const;
-const mcqDifficultyLevels = [
-  "beginner",
-  "intermediate",
-  "advanced",
-  "expert",
-] as const;
-const theoreticalQuestionTypes = [
-  "academic",
-  "practical",
-  "case-study",
-  "philosophical",
-  "architectural",
-] as const;
-const theoreticalDifficultyLevels = [
-  "basic",
-  "intermediate",
-  "advanced",
-  "architectural",
-] as const;
 const answerResponseFormats = [
   "bullet_points",
   "paragraph",
@@ -38,10 +12,6 @@ const answerResponseFormats = [
   "technical_whitepaper",
 ] as const;
 
-export const McqQuestionTypeSchema = z.enum(mcqQuestionTypes);
-export const McqDifficultyLevelSchema = z.enum(mcqDifficultyLevels);
-export const TheoreticalQuestionTypeSchema = z.enum(theoreticalQuestionTypes);
-export const TheoreticalDifficultyLevelSchema = z.enum(theoreticalDifficultyLevels);
 export const AnswerResponseFormatSchema = z.enum(answerResponseFormats);
 
 // ---------------------------------------------------------------------------
@@ -50,9 +20,19 @@ export const AnswerResponseFormatSchema = z.enum(answerResponseFormats);
 
 export const McqFormSchema = z.object({
   topic: z.string().trim().min(1, "Topic is required").max(200),
-  question_type: McqQuestionTypeSchema.default("academic"),
+  question_type: z
+    .string()
+    .trim()
+    .min(1, "Question type is required")
+    .max(100)
+    .default("academic"),
   num_questions: z.number().int().min(1).max(10).default(3),
-  difficulty_level: McqDifficultyLevelSchema.default("intermediate"),
+  difficulty_level: z
+    .string()
+    .trim()
+    .min(1, "Difficulty level is required")
+    .max(100)
+    .default("intermediate"),
   context_setting: z.string().trim().min(1, "Context setting is required").max(200),
   custom_instructions: z.string().trim().max(1000).default(""),
   past_questions: z.string().trim().max(5000).default(""),
@@ -61,11 +41,11 @@ export type McqFormValues = z.infer<typeof McqFormSchema>;
 
 export const McqRequestSchema = z.object({
   topic: z.string().min(1),
-  question_type: McqQuestionTypeSchema,
+  question_type: z.string().min(1),
   num_questions: z.number().int().min(1).max(10),
-  difficulty_level: McqDifficultyLevelSchema,
+  difficulty_level: z.string().min(1),
   context_setting: z.string().min(1),
-  past_questions: z.string().optional(),
+  past_questions: z.array(z.string()).optional(),
   custom_instructions: z.string().optional(),
 });
 export type McqRequest = z.infer<typeof McqRequestSchema>;
@@ -97,9 +77,19 @@ export type McqResponse = z.infer<typeof McqResponseSchema>;
 
 export const TheoreticalFormSchema = z.object({
   topic: z.string().trim().min(1, "Topic is required").max(200),
-  question_type: TheoreticalQuestionTypeSchema.default("architectural"),
+  question_type: z
+    .string()
+    .trim()
+    .min(1, "Question type is required")
+    .max(100)
+    .default("architectural"),
   num_questions: z.number().int().min(1).max(5).default(2),
-  difficulty_level: TheoreticalDifficultyLevelSchema.default("advanced"),
+  difficulty_level: z
+    .string()
+    .trim()
+    .min(1, "Difficulty level is required")
+    .max(100)
+    .default("advanced"),
   context_setting: z.string().trim().min(1, "Context setting is required").max(200),
   source_context: z.string().trim().max(5000).default(""),
   custom_instructions: z.string().trim().max(1000).default(""),
@@ -109,12 +99,12 @@ export type TheoreticalFormValues = z.infer<typeof TheoreticalFormSchema>;
 
 export const TheoreticalRequestSchema = z.object({
   topic: z.string().min(1),
-  question_type: TheoreticalQuestionTypeSchema,
+  question_type: z.string().min(1),
   num_questions: z.number().int().min(1).max(5),
-  difficulty_level: TheoreticalDifficultyLevelSchema,
+  difficulty_level: z.string().min(1),
   context_setting: z.string().min(1),
   source_context: z.string().optional(),
-  past_questions: z.string().optional(),
+  past_questions: z.array(z.string()).optional(),
   custom_instructions: z.string().optional(),
 });
 export type TheoreticalRequest = z.infer<typeof TheoreticalRequestSchema>;

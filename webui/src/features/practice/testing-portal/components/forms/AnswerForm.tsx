@@ -20,6 +20,7 @@ import {
   type AnswerResponse,
 } from "../../types";
 import { difficultyOptions, responseFormatOptions } from "../../lib/options";
+import { CustomSelectField } from "@/features/practice/components/fields/CustomSelectField";
 import { AnswerResult } from "../results/AnswerResult";
 
 const STORAGE_KEY = "practice.testing-portal.answer.v1";
@@ -77,7 +78,7 @@ export function AnswerForm() {
             error={errors.context?.message}
           />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <SelectField
+            <CustomSelectField
               label="Difficulty"
               name="difficulty"
               htmlFor="answer_difficulty"
@@ -85,6 +86,7 @@ export function AnswerForm() {
               options={difficultyOptions}
               disabled={tool.isPending}
               error={errors.difficulty?.message}
+              customPlaceholder="e.g. Principal Engineer"
             />
             <SelectField
               label="Response Format"

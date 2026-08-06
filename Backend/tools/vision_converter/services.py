@@ -10,7 +10,7 @@ from PIL import Image
 
 from core.config import settings
 from core.dspy_utils import build_lm, run_predictor
-from tools.vision_converter.schemas import VisionConversionResponse
+from tools.vision_converter.schemas import ImageToMarkdown, VisionConversionResponse
 
 logger = logging.getLogger(__name__)
 

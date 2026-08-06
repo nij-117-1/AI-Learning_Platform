@@ -17,7 +17,7 @@ Grades a user's submission (text, image, or both) against a target objective and
 | `scenario` | `string` | ✅ | The context of the task |
 | `question_asked` | `string` | ✅ | The specific question the user is answering |
 | `target_objective` | `string` | ✅ | The goal the user needs to achieve |
-| `expected_level` | `string` | ✅ | One of: `beginner`, `intermediate`, `expert` |
+| `expected_level` | `string` | ✅ | The required depth (any value accepted) |
 | `user_answer_text` | `string` | ❌ | The textual part of the user's response |
 | `image` | `file` | ❌ | The visual part of the response (handwriting, diagram, screenshot) |
 
@@ -60,7 +60,6 @@ All endpoints return a JSON body on failure.
 | `400` | `File must be an image.` | Non-image content type on `image` |
 | `400` | `Uploaded file is not a valid image.` | Bytes could not be decoded as an image |
 | `401` | `Invalid or missing API key` | Missing/invalid `X-API-Key` header |
-| `422` | `expected_level must be one of: beginner, intermediate, expert` | Invalid depth value |
 | `422` | `Provide either user_answer_text or an image to grade.` | Empty submission |
 | `500` | `Failed to evaluate the submission.` | Internal AI processing failure |
 

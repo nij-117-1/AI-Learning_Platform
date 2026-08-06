@@ -43,6 +43,9 @@ class Settings:
     # Ingredients Analyzer Configuration
     INGREDIENTS_STORAGE_DIR: str = os.getenv("INGREDIENTS_STORAGE_DIR", "Data/Ingredients")
 
+    # Testing Portal Configuration
+    PAST_QUESTIONS_LIMIT: int = int(os.getenv("PAST_QUESTIONS_LIMIT", "5"))
+
     # Vision Converter Configuration
     VISION_STORAGE_DIR: str = os.getenv("VISION_STORAGE_DIR", "Data/VisionConverter")
 

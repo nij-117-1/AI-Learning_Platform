@@ -14,7 +14,7 @@ Generates a structured explanation for a topic using AI reasoning.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `topic` | `string` | ✅ | The subject to explain (e.g., "Quantum Entanglement") |
-| `expertise_level` | `string` | ❌ | One of: `beginner`, `intermediate`, `expert` (default: `intermediate`) |
+| `expertise_level` | `string` | ❌ | Required depth (any value accepted) (default: `intermediate`) |
 | `context` | `string` | ❌ | Optional context or area of interest (e.g., "Use a metaphor involving shoes.") |
 
 **Example request**:
@@ -50,8 +50,8 @@ Generates a high-depth, Markdown-formatted A-to-Z tutorial as a single cohesive 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `topic` | `string` | ✅ | The subject to explain (e.g., "FastAPI Architecture") |
-| `expertise_level` | `string` | ✅ | One of: `beginner`, `intermediate`, `expert` |
-| `explanation_style` | `string` | ✅ | One of: `academic`, `practical`, `with examples` |
+| `expertise_level` | `string` | ✅ | Required depth (any value accepted) |
+| `explanation_style` | `string` | ✅ | Explanation lens (any value accepted) |
 
 **Example request**:
 
@@ -85,8 +85,8 @@ Generates a structured A-to-Z roadmap with concept pointers. Ideal for structure
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `topic` | `string` | ✅ | The subject or concept (e.g., "UI vs UX differences") |
-| `expertise_level` | `string` | ✅ | One of: `beginner`, `intermediate`, `expert` |
-| `explanation_style` | `string` | ✅ | One of: `academic`, `practical`, `with examples`, `conceptual` |
+| `expertise_level` | `string` | ✅ | Required depth (any value accepted) |
+| `explanation_style` | `string` | ✅ | Explanation lens (any value accepted) |
 
 **Example request**:
 
@@ -194,8 +194,8 @@ Triggers a Socratic session that challenges the learner's understanding through 
 | `topic` | `string` | ✅ | The core subject to master (e.g., "Supply and Demand Equilibrium") |
 | `context` | `string` | ✅ | Background material or text |
 | `user_instructions` | `string` | ❌ | Special constraints or focus areas |
-| `level` | `string` | ❌ | One of: `beginner`, `intermediate`, `advanced`, `expert` (default: `intermediate`) |
-| `question_category` | `string` | ✅ | One of: `conceptual-bridge`, `counterfactual`, `first-principles`, `applied-case-study`, `reductio-ad-absurdum` |
+| `level` | `string` | ❌ | Depth level (any value accepted) (default: `intermediate`) |
+| `question_category` | `string` | ✅ | Cognitive framework for the questions (any value accepted) |
 | `num_questions` | `integer` | ❌ | Number of questions, `1`–`10` (default: `3`) |
 
 **Example request**:
@@ -242,7 +242,7 @@ Initializes a personalized learning roadmap that connects the user's past learni
 | `topic` | `string` | ✅ | The main topic to learn (e.g., "Asynchronous Python (asyncio)") |
 | `context` | `string` | ✅ | Source material, documents, or raw text |
 | `past_learning` | `string` | ✅ | Summary of what the user already knows |
-| `user_level` | `string` | ✅ | One of: `beginner`, `intermediate`, `advanced`, `expert` |
+| `user_level` | `string` | ✅ | User's knowledge level (any value accepted) |
 | `user_hopes` | `string` | ✅ | What the user wants to achieve today |
 | `additional_instructions` | `string` | ❌ | Extra constraints (e.g., "keep it brief") |
 

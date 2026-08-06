@@ -14,11 +14,11 @@ Generates a set of multiple choice questions (MCQs) via DSPy.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `topic` | `string` | ✅ | The subject for the questions (e.g., "Python Concurrency") |
-| `question_type` | `string` | ✅ | One of: `academic`, `practical`, `scenario-based`, `conceptual`, `recall` |
+| `question_type` | `string` | ✅ | Any question style (e.g., `academic`, `practical`, `scenario-based`, `conceptual`, `recall`) |
 | `num_questions` | `integer` | ✅ | Number of MCQs to generate (1–10) |
-| `difficulty_level` | `string` | ✅ | One of: `beginner`, `intermediate`, `advanced`, `expert` |
+| `difficulty_level` | `string` | ✅ | Any complexity level (e.g., `beginner`, `intermediate`, `advanced`, `expert`) |
 | `context_setting` | `string` | ✅ | The scenario (e.g., "Senior Backend Engineer Interview") |
-| `past_questions` | `string` | ❌ | JSON array of previous questions to avoid repetition |
+| `past_questions` | `array[string]` | ❌ | List of previous question texts to avoid repetition |
 | `custom_instructions` | `string` | ❌ | Specific user requirements |
 
 **Example request**:
@@ -33,6 +33,10 @@ curl -X POST http://localhost:8000/practice/testing-portal/generate-mcq \
     "num_questions": 3,
     "difficulty_level": "advanced",
     "context_setting": "Senior Backend Engineer Interview",
+    "past_questions": [
+      "Explain the GIL.",
+      "Compare asyncio and threads."
+    ],
     "custom_instructions": "Focus on GIL trade-offs"
   }'
 ```
@@ -68,12 +72,12 @@ Generates open-ended, theoretical, or scenario-based questions via DSPy.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `topic` | `string` | ✅ | The subject or domain (e.g., "Microservices") |
-| `question_type` | `string` | ✅ | One of: `academic`, `practical`, `case-study`, `philosophical`, `architectural` |
+| `question_type` | `string` | ✅ | Any question style (e.g., `academic`, `practical`, `case-study`, `philosophical`, `architectural`) |
 | `source_context` | `string` | ❌ | Source text/data for analysis |
 | `num_questions` | `integer` | ✅ | Number of questions to generate (1–5) |
-| `difficulty_level` | `string` | ✅ | One of: `basic`, `intermediate`, `advanced`, `architectural` |
+| `difficulty_level` | `string` | ✅ | Any depth level (e.g., `basic`, `intermediate`, `advanced`, `architectural`) |
 | `context_setting` | `string` | ✅ | The scenario (e.g., "High-Tech Enterprise Interview") |
-| `past_questions` | `string` | ❌ | Previous questions to ensure variety |
+| `past_questions` | `array[string]` | ❌ | List of previous question texts to ensure variety |
 | `custom_instructions` | `string` | ❌ | Specific constraints |
 
 **Example request**:
@@ -88,6 +92,7 @@ curl -X POST http://localhost:8000/practice/testing-portal/generate-theoretical 
     "num_questions": 2,
     "difficulty_level": "advanced",
     "context_setting": "High-Tech Enterprise Interview",
+    "past_questions": ["Compare saga vs two-phase commit."],
     "custom_instructions": "Focus on speed vs consistency."
   }'
 ```
@@ -120,7 +125,7 @@ Acts as a Subject Matter Expert to generate a comprehensive answer to a high-lev
 | `question` | `string` | ✅ | The question to answer |
 | `context` | `string` | ✅ | The setting (e.g., "Job Interview for Senior Developer") |
 | `difficulty` | `string` | ✅ | Complexity of the expected answer (e.g., "Expert") |
-| `response_format` | `string` | ✅ | One of: `bullet_points`, `paragraph`, `step_by_step`, `technical_whitepaper` |
+| `response_format` | `string` | ✅ | Any structural style (e.g., `bullet_points`, `paragraph`, `step_by_step`, `technical_whitepaper`) |
 | `custom_instructions` | `string` | ❌ | Additional constraints or information |
 
 **Example request**:
@@ -222,6 +227,7 @@ Optional `X-API-Key` header. When `API_KEY` is set in the environment, the serve
 | `LLM_API_KEY` | *(empty)* | Provider API key |
 | `LLM_API_BASE` | `https://api.openai.com/v1` | OpenAI-compatible base URL |
 | `LLM_TEMPERATURE` | `0.7` | Sampling temperature |
+| `PAST_QUESTIONS_LIMIT` | `8` | How many of the most recent past questions to consider |
 | `DEBUG` | `false` | FastAPI debug mode |
 | `LOG_LEVEL` | `INFO` (`DEBUG` if `DEBUG=true`) | Logging verbosity |
 | `HOST` / `PORT` | `0.0.0.0` / `8000` | Uvicorn bind address |

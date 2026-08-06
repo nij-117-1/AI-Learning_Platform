@@ -1,7 +1,7 @@
 import json
 import logging
 import uuid
-from typing import Any, AsyncGenerator, Dict, List, Literal, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 import dspy
 
@@ -34,7 +34,7 @@ class GeneralExplainer(dspy.Signature):
     """
 
     topic: str = dspy.InputField(description="The specific subject or question to explain.")
-    expertise_level: Literal["beginner", "intermediate", "expert"] = dspy.InputField(
+    expertise_level: str = dspy.InputField(
         description="The target audience's knowledge level."
     )
     context: Optional[str] = dspy.InputField(
@@ -59,8 +59,8 @@ class TopicExplainerString(dspy.Signature):
     """
 
     topic: str = dspy.InputField(description="The subject to explain.")
-    expertise_level: Literal["beginner", "intermediate", "expert"] = dspy.InputField()
-    explanation_style: Literal["academic", "practical", "with examples"] = dspy.InputField()
+    expertise_level: str = dspy.InputField()
+    explanation_style: str = dspy.InputField()
 
     full_explanation: str = dspy.OutputField(
         description="A full, markdown-formatted guide from basics to advanced mastery."
@@ -76,10 +76,10 @@ class AtoZExplainer(dspy.Signature):
     """
 
     topic: str = dspy.InputField(description="The subject or concept the user wants to understand.")
-    expertise_level: Literal["beginner", "intermediate", "expert"] = dspy.InputField(
+    expertise_level: str = dspy.InputField(
         description="The depth of the explanation."
     )
-    explanation_style: Literal["academic", "practical", "with examples", "conceptual"] = dspy.InputField(
+    explanation_style: str = dspy.InputField(
         description="The format or lens used for the explanation."
     )
 
@@ -152,16 +152,10 @@ class SocraticQuestionGenerator(dspy.Signature):
     topic: str = dspy.InputField(desc="The core subject to master.")
     context: str = dspy.InputField(desc="The background material or text.")
     user_instructions: Optional[str] = dspy.InputField(desc="Special constraints or focus areas.")
-    level: Literal["beginner", "intermediate", "advanced", "expert"] = dspy.InputField(
+    level: str = dspy.InputField(
         desc="The depth of critical thinking required."
     )
-    question_category: Literal[
-        "conceptual-bridge",
-        "counterfactual",
-        "first-principles",
-        "applied-case-study",
-        "reductio-ad-absurdum",
-    ] = dspy.InputField(desc="The cognitive framework for the questions.")
+    question_category: str = dspy.InputField(desc="The cognitive framework for the questions.")
 
     num_questions: int = dspy.InputField(desc="Number of questions to generate.")
 
@@ -184,7 +178,7 @@ class TopicLearningPath(dspy.Signature):
     topic: str = dspy.InputField(desc="The main topic to be learned today.")
     context: str = dspy.InputField(desc="Source material, documents, or raw text for the topic.")
     past_learning: str = dspy.InputField(desc="Summary of what the user already knows or did in previous sessions.")
-    user_level: Literal["beginner", "intermediate", "advanced", "expert"] = dspy.InputField(
+    user_level: str = dspy.InputField(
         desc="Cognitive level."
     )
     user_hopes: str = dspy.InputField(

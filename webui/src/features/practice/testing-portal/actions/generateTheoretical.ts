@@ -14,11 +14,14 @@ import {
   type TheoreticalResponse,
 } from "../types";
 import { postJson, safeParse, practiceApiUrl } from "../../lib/api";
+import { splitPastQuestions } from "../lib/pastQuestions";
 
 export async function generateTheoreticalAction(
   input: TheoreticalFormValues
 ): Promise<TheoreticalResponse> {
   safeParse(TheoreticalFormSchema, input, "Invalid theoretical request");
+
+  const pastQuestions = splitPastQuestions(input.past_questions);
 
   const payload: TheoreticalRequest = {
     topic: input.topic,
@@ -31,7 +34,9 @@ export async function generateTheoreticalAction(
   if (input.custom_instructions.trim()) {
     payload.custom_instructions = input.custom_instructions.trim();
   }
-  if (input.past_questions.trim()) payload.past_questions = input.past_questions.trim();
+  if (pastQuestions.length > 0) {
+    payload.past_questions = pastQuestions;
+  }
   safeParse(TheoreticalRequestSchema, payload, "Invalid theoretical payload");
 
   const raw = await postJson<unknown>(

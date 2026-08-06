@@ -3,7 +3,7 @@ import logging
 import os
 import uuid
 from io import BytesIO
-from typing import List, Literal, Optional
+from typing import List, Optional
 
 import aiofiles
 import dspy
@@ -42,7 +42,7 @@ class HybridUserResponseGrader(dspy.Signature):
     scenario: str = dspy.InputField(description="The context of the task.")
     question_asked: str = dspy.InputField(description="The specific question the user is answering.")
     target_objective: str = dspy.InputField(description="The goal the user needs to achieve.")
-    expected_level: Literal["beginner", "intermediate", "expert"] = dspy.InputField(description="Required depth.")
+    expected_level: str = dspy.InputField(description="Required depth.")
     user_answer_text: Optional[str] = dspy.InputField(default=None, description="The textual part of the user's response.")
     user_answer_image: Optional[dspy.Image] = dspy.InputField(default=None, description="The visual part of the user's response.")
 

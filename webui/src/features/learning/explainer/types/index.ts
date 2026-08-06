@@ -18,11 +18,16 @@ export const questionCategories = [
   "reductio-ad-absurdum",
 ] as const;
 
-export const ExpertiseLevelSchema = z.enum(expertiseLevels);
-export const ExplanationStyleSchema = z.enum(explanationStyles);
-export const RoadmapStyleSchema = z.enum(roadmapStyles);
-export const UserLevelSchema = z.enum(userLevels);
-export const QuestionCategorySchema = z.enum(questionCategories);
+// The backend accepts any value for these fields ("any value accepted"), so
+// the schemas are free-form strings. The `*Options` lists above remain as
+// suggested presets for the dropdown UIs.
+const freeTextLevelSchema = z.string().trim().min(1, "Required").max(100);
+
+export const ExpertiseLevelSchema = freeTextLevelSchema;
+export const ExplanationStyleSchema = freeTextLevelSchema;
+export const RoadmapStyleSchema = freeTextLevelSchema;
+export const UserLevelSchema = freeTextLevelSchema;
+export const QuestionCategorySchema = freeTextLevelSchema;
 
 // ---------------------------------------------------------------------------
 // Request schemas
