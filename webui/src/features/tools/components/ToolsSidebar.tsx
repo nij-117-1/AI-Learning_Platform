@@ -32,6 +32,7 @@ import { flexibleWriterTools } from "@/features/tools/lib/flexible-writer-tools"
 import { diagramTools } from "@/features/tools/lib/diagram-tools";
 import { creativeAssetsTools } from "@/features/tools/lib/creative-assets-tools";
 import { chartsTools } from "@/features/tools/lib/charts-tools";
+import { rssTools } from "@/features/tools/rss/lib/rss-tools";
 
 function ToolGroup({ label, tools, pathname }: { label: string; tools: LearningTool[]; pathname: string }) {
   return (
@@ -75,6 +76,7 @@ export function ToolsSidebar() {
       <SidebarContent>
         <ToolGroup label="Visual" tools={[...visionConverterTools, ...diagramTools, ...chartsTools]} pathname={pathname} />
         <ToolGroup label="Content" tools={[...socialPostsTools, ...creativeAssetsTools, ...flexibleWriterTools, ...promptGeneratorTools]} pathname={pathname} />
+        <ToolGroup label="Reading" tools={rssTools} pathname={pathname} />
         <ToolGroup label="Lifestyle" tools={ingredientsTools} pathname={pathname} />
       </SidebarContent>
       <SidebarRail />
