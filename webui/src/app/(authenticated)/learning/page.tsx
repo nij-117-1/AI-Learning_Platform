@@ -5,6 +5,7 @@ import { GuidesToolsGrid } from "@/features/learning/components/GuidesToolsGrid"
 import { ToolsCardGrid } from "@/features/learning/components/ToolsCardGrid";
 import { LearningHubCard } from "@/features/learning/components/LearningHubCard";
 import { MapPinned } from "lucide-react";
+import { conceptualBridgeTools } from "@/features/learning/lib/conceptual-bridge-tools";
 import { memoryHelperTools } from "@/features/learning/lib/memory-helper-tools";
 import { motivationTools } from "@/features/learning/lib/motivation-tools";
 import { projectsTools } from "@/features/learning/lib/projects-tools";
@@ -108,6 +109,17 @@ export default function LearningPage() {
           description={tutorChatTools[0].description}
           icon={tutorChatTools[0].icon}
           accent={tutorChatTools[0].accent}
+        />
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold">Conceptual Bridge</h2>
+        <LearningHubCard
+          href={conceptualBridgeTools[0].href}
+          title={conceptualBridgeTools[0].title}
+          description={conceptualBridgeTools[0].description}
+          icon={conceptualBridgeTools[0].icon}
+          accent={conceptualBridgeTools[0].accent}
         />
       </section>
     </div>

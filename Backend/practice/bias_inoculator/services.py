@@ -87,25 +87,6 @@ class BiasInoculatorService:
             return "New session."
         return "\n".join(history)
 
-    @staticmethod
-    def _pick(value: object, allowed: tuple, default: str) -> str:
-        """
-        Returns a value if it belongs to the allowed set (case-insensitive), else a default.
-
-        Args:
-            value (object): The raw LLM output.
-            allowed (tuple): Allowed string values.
-            default (str): Fallback value.
-
-        Returns:
-            str: A normalized enum-style string.
-        """
-        candidate = str(value).strip().lower()
-        for option in allowed:
-            if option.lower() == candidate:
-                return option
-        return default
-
     async def inoculate_bias(self, data: BiasRequest) -> BiasResponse:
         """
         Creates a 'trap' scenario to train against cognitive biases.
@@ -130,7 +111,7 @@ class BiasInoculatorService:
             )
             logger.info("Generated bias inoculator scenario for bias '%s'", selected_bias)
             return BiasResponse(
-                target_bias=self._pick(result.target_bias, self._BIAS_CHOICES, selected_bias),
+                target_bias=selected_bias,
                 scenario_setup=self._coerce_str(result.scenario_setup),
                 intuitive_trap=self._coerce_str(result.intuitive_trap),
                 rational_analysis=self._coerce_str(result.rational_analysis),

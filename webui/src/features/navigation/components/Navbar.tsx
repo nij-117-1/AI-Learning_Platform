@@ -4,6 +4,7 @@
  * Fetches identity server-side and renders branding, search, theme toggle, and user menu.
  */
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 import { PageTitle } from "./PageTitle";
 import { NavSearch } from "./NavSearch";
@@ -23,8 +24,11 @@ export async function Navbar() {
   const rootNode = buildNavigationTree(pagesData as PageData[]);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center justify-between gap-4 px-6">
+    <header
+      className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+      style={{ "--navbar-height": "4rem" } as CSSProperties}
+    >
+      <div className="flex h-(--navbar-height) items-center justify-between gap-4 px-6">
         <div className="flex items-center gap-6">
           <Link href="/dashboard" className="flex items-center gap-1.5 font-bold text-xl tracking-tight shrink-0">
             <span className="text-primary">AI</span>

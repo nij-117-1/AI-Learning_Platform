@@ -1,4 +1,4 @@
-// src/features/practice/conceptual-bridge/components/results/ConceptualBridgeResult.tsx
+// src/features/learning/conceptual-bridge/components/results/ConceptualBridgeResult.tsx
 /**
  * Displays the conceptual bridge: structural analogy, bridging narrative,
  * insight question, and the transfer-learning score.

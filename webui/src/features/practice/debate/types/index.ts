@@ -9,13 +9,16 @@ import type { PracticeChatMessage } from "@/features/practice/components/chat/ty
 export const debateSides = ["pro", "con"] as const;
 export const turnStrategies = ["attack", "defend", "counter"] as const;
 export const rhetoricalStances = ["aggressive", "defensive", "moderate", "socratic"] as const;
+export const turnModes = ["type", "ai"] as const;
 
 export const DebateSideSchema = z.enum(debateSides);
 export const TurnStrategySchema = z.enum(turnStrategies);
 export const RhetoricalStanceSchema = z.enum(rhetoricalStances);
+export const TurnModeSchema = z.enum(turnModes);
 export type DebateSide = z.infer<typeof DebateSideSchema>;
 export type TurnStrategy = z.infer<typeof TurnStrategySchema>;
 export type RhetoricalStance = z.infer<typeof RhetoricalStanceSchema>;
+export type TurnMode = z.infer<typeof TurnModeSchema>;
 
 export const PersonaFormSchema = z.object({
   archetype: z.string().trim().min(1, "Pick an archetype").max(300),
@@ -85,16 +88,26 @@ export const JudgeResponseSchema = z.object({
 });
 export type JudgeResponse = z.infer<typeof JudgeResponseSchema>;
 
+/** Composer payload for a single debate turn (either side, typed or AI). */
+export interface TurnPayload {
+  side: DebateSide;
+  mode: TurnMode;
+  /** Typed statement ("type") or an optional direction for the AI ("ai"). */
+  text: string;
+  strategy: TurnStrategy;
+  evidence: string;
+}
+
 /** Persisted client-side session state for an ongoing debate. */
 export interface DebateSession {
   topic: string;
-  persona: PersonaProfile;
-  side: DebateSide;
+  proPersona: PersonaProfile;
+  conPersona: PersonaProfile;
   /** Backend-format exchange history ({role, content}). */
   history: { role: string; content: string }[];
   /** UI transcript for ChatTranscript. */
   log: PracticeChatMessage[];
-  /** Latest turn's structured output, shown as an analysis card. */
+  /** Latest AI turn's structured output, shown as an analysis card. */
   lastTurn: DebateTurnResponse | null;
   proTranscript: string;
   conTranscript: string;

@@ -58,9 +58,15 @@ export const PuzzleEvaluationResponseSchema = z.object({
 });
 export type PuzzleEvaluationResponse = z.infer<typeof PuzzleEvaluationResponseSchema>;
 
-/** Persisted state for an in-progress puzzle round. */
+/** A single answer attempt in a puzzle round, with its evaluation. */
+export interface PuzzleAttempt {
+  answer: string;
+  evaluation: PuzzleEvaluationResponse;
+}
+
+/** Persisted state for an in-progress puzzle round (the guess-until-correct game). */
 export interface PuzzleRound {
   puzzle: PuzzleResponse;
-  evaluation: PuzzleEvaluationResponse | null;
+  attempts: PuzzleAttempt[];
   userAnswer: string;
 }

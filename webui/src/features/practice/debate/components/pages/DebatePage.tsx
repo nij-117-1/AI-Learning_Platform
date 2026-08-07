@@ -5,6 +5,7 @@
  */
 "use client";
 
+import { useRef } from "react";
 import { Swords } from "lucide-react";
 import { ExplainerPageShell } from "@/features/learning/explainer/components/ExplainerPageShell";
 import { DraftStatus } from "@/features/learning/explainer/components/DraftStatus";
@@ -12,7 +13,6 @@ import { FormActions } from "@/features/learning/explainer/components/FormAction
 import { EmptyResult } from "@/features/learning/explainer/components/EmptyResult";
 import {
   InputField,
-  SelectField,
   SliderField,
 } from "@/features/learning/explainer/components/fields";
 import { usePersistedForm } from "@/features/learning/explainer/hooks/usePersistedForm";
@@ -22,17 +22,18 @@ import { createPersonaAction, debateTurnAction, judgeDebateAction } from "../../
 import {
   PersonaFormSchema,
   type DebateSession,
+  type DebateSide,
   type PersonaFormValues,
+  type PersonaProfile,
   type PersonaResponse,
-  type TurnStrategy,
+  type TurnPayload,
   type DebateTurnResponse,
   type JudgeResponse,
 } from "../../types";
-import { sideOptions } from "../../lib/options";
 import { DebateBoard } from "../results/DebateBoard";
 
 const STORAGE_KEY = "practice.debate.form.v1";
-const SESSION_KEY = "practice.debate.session.v1";
+const SESSION_KEY = "practice.debate.session.v2";
 
 const DEFAULTS: PersonaFormValues = {
   archetype: "Cynical Academic",
@@ -54,19 +55,25 @@ export function DebatePage() {
     initialValue: null,
   });
 
-  const start = useToolRequest<PersonaFormValues, PersonaResponse>({
-    run: createPersonaAction,
+  const start = useToolRequest<PersonaFormValues, { pro: PersonaProfile; con: PersonaProfile }>({
+    run: async (values) => {
+      const [pro, con] = await Promise.all([
+        createPersonaAction({ ...values, side: "pro" }),
+        createPersonaAction({ ...values, side: "con" }),
+      ]);
+      return { pro: pro.persona, con: con.persona };
+    },
     onSuccess: (result) => {
       const values = persisted.form.getValues();
       session.setValue({
         topic: values.topic,
-        persona: result.persona,
-        side: values.side,
+        proPersona: result.pro,
+        conPersona: result.con,
         history: [],
         log: [
           {
             role: "assistant",
-            content: `**${result.persona.persona_name}** (${values.side === "con" ? "against" : "for"} "${values.topic}") is ready. Their stance: ${result.persona.overall_stance}.\n\nMake your opening argument.`,
+            content: `**${result.pro.persona_name}** (for) and **${result.con.persona_name}** (against) are ready on "${values.topic}". Each turn, pick a side and either type the argument yourself or generate it with AI.`,
           },
         ],
         lastTurn: null,
@@ -78,48 +85,64 @@ export function DebatePage() {
     },
   });
 
-  const turn = useToolRequest<
-    {
-      session: DebateSession;
-      argument: string;
-      strategy: TurnStrategy;
-      evidence: string;
-    },
-    { response: DebateTurnResponse; argument: string; session: DebateSession }
-  >({
-    run: async ({ session: current, argument, strategy, evidence }) => {
+  const appendStatement = (
+    prev: DebateSession,
+    side: DebateSide,
+    statement: string,
+    lastTurn: DebateTurnResponse | null
+  ): DebateSession => {
+    const persona = side === "pro" ? prev.proPersona : prev.conPersona;
+    const sideLabel = side.toUpperCase();
+    return {
+      ...prev,
+      history: [...prev.history, { role: "user", content: statement }],
+      log: [
+        ...prev.log,
+        { role: "assistant", content: `**${sideLabel} (${persona.persona_name})**: ${statement}` },
+      ],
+      lastTurn,
+      proTranscript: side === "pro" ? prev.proTranscript + `${statement}\n\n` : prev.proTranscript,
+      conTranscript: side === "con" ? prev.conTranscript + `${statement}\n\n` : prev.conTranscript,
+    };
+  };
+
+  const turn = useToolRequest<TurnPayload, { response: DebateTurnResponse; side: DebateSide }>({
+    run: async ({ side, text, strategy, evidence }) => {
+      const current = session.value;
+      if (!current) throw new Error("No active debate session.");
+      const persona = side === "pro" ? current.proPersona : current.conPersona;
       const response = await debateTurnAction({
-        system_prompt: current.persona.system_prompt,
+        system_prompt: persona.system_prompt,
         topic: current.topic,
         history: current.history,
         strategy,
         evidence: evidence || undefined,
-        instructions: "Keep the spoken argument concise.",
+        instructions: text || "Keep the spoken argument concise.",
       });
-      return { response, argument, session: current };
+      return { response, side };
     },
-    onSuccess: ({ response, argument, session: prev }) => {
+    onSuccess: ({ response, side }) => {
       const current = session.value;
       if (!current) return;
-      const userTranscript = `${current.side === "pro" ? "CON" : "PRO"}: ${argument}\n\n`;
-      const personaTranscript = `${current.side === "pro" ? "PRO" : "CON"}: ${response.spoken_argument}\n\n`;
-      session.setValue({
-        ...current,
-        history: [
-          ...current.history,
-          { role: "user", content: argument },
-          { role: "assistant", content: response.spoken_argument },
-        ],
-        log: [
-          ...current.log,
-          { role: "user", content: argument },
-          { role: "assistant", content: response.spoken_argument },
-        ],
-        lastTurn: response,
-        proTranscript:
-          current.side === "pro" ? current.proTranscript + personaTranscript : current.proTranscript + userTranscript,
-        conTranscript:
-          current.side === "con" ? current.conTranscript + personaTranscript : current.conTranscript + userTranscript,
+      session.setValue((prev) =>
+        prev ? appendStatement(prev, side, response.spoken_argument, response) : prev
+      );
+    },
+  });
+
+  const regenSideRef = useRef<DebateSide>("pro");
+  const regen = useToolRequest<DebateSide, PersonaResponse>({
+    run: (side) => {
+      const values = persisted.form.getValues();
+      return createPersonaAction({ ...values, side });
+    },
+    onSuccess: (result) => {
+      const side = regenSideRef.current;
+      session.setValue((prev) => {
+        if (!prev) return prev;
+        return side === "pro"
+          ? { ...prev, proPersona: result.persona }
+          : { ...prev, conPersona: result.persona };
       });
     },
   });
@@ -139,16 +162,23 @@ export function DebatePage() {
   });
 
   const errors = persisted.form.formState.errors;
-  const isPending = start.isPending || turn.isPending || judge.isPending;
+  const isPending = start.isPending || turn.isPending || judge.isPending || regen.isPending;
 
   const handleNewDebate = () => {
     session.setValue(null);
     persisted.resetDraft();
   };
 
-  const handleTurn = (argument: string, strategy: TurnStrategy, evidence: string) => {
+  const handleTurn = (payload: TurnPayload) => {
     const current = session.value;
-    if (current) turn.execute({ session: current, argument, strategy, evidence });
+    if (!current) return;
+    if (payload.mode === "type") {
+      session.setValue((prev) =>
+        prev ? appendStatement(prev, payload.side, payload.text.trim(), null) : prev
+      );
+    } else {
+      turn.execute(payload);
+    }
   };
 
   const handleJudge = () => {
@@ -156,10 +186,24 @@ export function DebatePage() {
     if (current) judge.execute({ session: current });
   };
 
+  const handleUpdatePersona = (side: DebateSide, persona: PersonaProfile) => {
+    session.setValue((prev) => {
+      if (!prev) return prev;
+      return side === "pro"
+        ? { ...prev, proPersona: persona }
+        : { ...prev, conPersona: persona };
+    });
+  };
+
+  const handleRegenerate = (side: DebateSide) => {
+    regenSideRef.current = side;
+    regen.execute(side);
+  };
+
   return (
     <ExplainerPageShell
       title="Debate Engine"
-      description="Build a character-driven debate persona with real strategic priorities, go head-to-head turn by turn, and get a judge's verdict."
+      description="Generate opposing Pro and Con personas, play both sides turn by turn — typing statements yourself or generating them with AI — and get a judge's verdict. Edit either persona anytime."
       headerAction={
         <DraftStatus
           status={persisted.status}
@@ -212,15 +256,6 @@ export function DebatePage() {
             {...persisted.form.register("topic")}
             error={errors.topic?.message}
           />
-          <SelectField
-            label="Persona Side"
-            name="side"
-            htmlFor="debate_side"
-            control={persisted.form.control}
-            options={sideOptions}
-            disabled={start.isPending}
-            error={errors.side?.message}
-          />
           <InputField
             label="Custom Constraints (optional)"
             htmlFor="debate_constraints"
@@ -242,9 +277,12 @@ export function DebatePage() {
           <DebateBoard
             session={session.value}
             isPending={isPending}
-            error={turn.error ?? judge.error}
+            error={turn.error ?? judge.error ?? regen.error}
             onTurn={handleTurn}
             onJudge={handleJudge}
+            onUpdatePersona={handleUpdatePersona}
+            onRegenerate={handleRegenerate}
+            regenPending={regen.isPending}
           />
         ) : (
           <EmptyResult

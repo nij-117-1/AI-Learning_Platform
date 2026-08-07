@@ -5,6 +5,7 @@
  */
 "use client";
 
+import { useRef } from "react";
 import { Brain } from "lucide-react";
 import { ExplainerPageShell } from "@/features/learning/explainer/components/ExplainerPageShell";
 import { DraftStatus } from "@/features/learning/explainer/components/DraftStatus";
@@ -17,6 +18,8 @@ import { useToolRequest } from "@/features/learning/explainer/hooks/useToolReque
 import { generateRiddleAction, evaluateRiddleAction } from "../../actions";
 import {
   RiddleFormSchema,
+  type RiddleEvaluationRequest,
+  type RiddleEvaluationResponse,
   type RiddleFormValues,
   type RiddleResponse,
   type RiddleRound,
@@ -25,7 +28,7 @@ import { cognitiveDomainOptions, difficultyLevelOptions } from "../../lib/option
 import { RiddleResult } from "../results/RiddleResult";
 
 const STORAGE_KEY = "practice.riddle.form.v1";
-const ROUND_KEY = "practice.riddle.round.v1";
+const ROUND_KEY = "practice.riddle.round.v2";
 
 const DEFAULTS: RiddleFormValues = {
   field_of_interest: "Space",
@@ -45,12 +48,25 @@ export function RiddlePage() {
   });
   const generate = useToolRequest<RiddleFormValues, RiddleResponse>({
     run: generateRiddleAction,
-    onSuccess: (result) => round.setValue({ riddle: result, evaluation: null, userAnswer: "" }),
+    onSuccess: (result) => {
+      evaluate.reset();
+      round.setValue({ riddle: result, attempts: [], userAnswer: "" });
+    },
   });
-  const evaluate = useToolRequest<{ riddle_text: string; solution: string; user_answer: string }, any>({
+  const pendingAnswerRef = useRef("");
+  const evaluate = useToolRequest<RiddleEvaluationRequest, RiddleEvaluationResponse>({
     run: evaluateRiddleAction,
     onSuccess: (result) => {
-      if (round.value) round.setValue({ ...round.value, evaluation: result });
+      const answer = pendingAnswerRef.current;
+      pendingAnswerRef.current = "";
+      round.setValue((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          attempts: [...current.attempts, { answer, evaluation: result }],
+          userAnswer: "",
+        };
+      });
     },
   });
 
@@ -60,15 +76,18 @@ export function RiddlePage() {
     const current = round.value;
     if (!current || !answer.trim()) return;
     const { riddle } = current;
-    round.setValue({ ...current, userAnswer: answer });
+    const trimmed = answer.trim();
+    pendingAnswerRef.current = trimmed;
+    round.setValue({ ...current, userAnswer: trimmed });
     evaluate.execute({
       riddle_text: riddle.riddle_text,
       solution: riddle.solution,
-      user_answer: answer.trim(),
+      user_answer: trimmed,
     });
   };
 
   const handleNewRiddle = () => {
+    evaluate.reset();
     round.setValue(null);
     persisted.resetDraft();
   };
@@ -81,7 +100,7 @@ export function RiddlePage() {
   return (
     <ExplainerPageShell
       title="Riddle Generator"
-      description="Generate an adaptive riddle tuned to your topic and cognitive domain, then get feedback that redirects your thinking."
+      description="Generate an adaptive riddle tuned to your topic and cognitive domain, then keep guessing until you crack it — each attempt gets feedback that redirects your thinking."
       headerAction={
         <DraftStatus
           status={persisted.status}
@@ -130,7 +149,7 @@ export function RiddlePage() {
         round.value ? (
           <RiddleResult
             riddle={round.value.riddle}
-            evaluation={round.value.evaluation}
+            attempts={round.value.attempts}
             userAnswer={round.value.userAnswer}
             isPending={evaluate.isPending}
             error={evaluate.error}

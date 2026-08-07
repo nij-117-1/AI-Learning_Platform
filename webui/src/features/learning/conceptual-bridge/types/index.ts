@@ -1,4 +1,4 @@
-// src/features/practice/conceptual-bridge/types/index.ts
+// src/features/learning/conceptual-bridge/types/index.ts
 /**
  * Zod schemas + TypeScript types for the Conceptual Bridge Builder API
  * (Backend/practice/conceptual_bridge/api.md).

@@ -1,4 +1,4 @@
-// src/features/practice/conceptual-bridge/components/pages/ConceptualBridgePage.tsx
+// src/features/learning/conceptual-bridge/components/pages/ConceptualBridgePage.tsx
 /**
  * Conceptual Bridge Builder page: connect two unrelated concepts through a
  * deep structural analogy.
@@ -18,7 +18,7 @@ import { BridgeFormSchema, type BridgeFormValues, type BridgeResponse } from "..
 import { abstractionDepthOptions } from "../../lib/options";
 import { ConceptualBridgeResult } from "../results/ConceptualBridgeResult";
 
-const STORAGE_KEY = "practice.conceptual-bridge.v1";
+const STORAGE_KEY = "learning.conceptual-bridge.v1";
 
 const DEFAULTS: BridgeFormValues = {
   concept_a: "Photosynthesis",

@@ -1,4 +1,4 @@
-// src/features/practice/conceptual-bridge/actions/generate.ts
+// src/features/learning/conceptual-bridge/actions/generate.ts
 /**
  * Server Action for POST /practice/conceptual_bridge/generate.
  * Builds a deep structural analogy between two seemingly unrelated concepts.
@@ -13,7 +13,7 @@ import {
   type BridgeRequest,
   type BridgeResponse,
 } from "../types";
-import { postJson, safeParse, practiceApiUrl } from "../../lib/api";
+import { postJson, safeParse, learningApiUrl } from "../../lib/api";
 
 export async function generateBridgeAction(input: BridgeFormValues): Promise<BridgeResponse> {
   safeParse(BridgeFormSchema, input, "Invalid bridge request");
@@ -26,7 +26,7 @@ export async function generateBridgeAction(input: BridgeFormValues): Promise<Bri
   safeParse(BridgeRequestSchema, payload, "Invalid bridge payload");
 
   const raw = await postJson<unknown>(
-    practiceApiUrl("/practice/conceptual_bridge", "generate"),
+    learningApiUrl("/practice/conceptual_bridge", "generate"),
     payload
   );
   return safeParse(BridgeResponseSchema, raw, "Invalid bridge response");

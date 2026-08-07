@@ -5,6 +5,7 @@
  */
 "use client";
 
+import { useRef } from "react";
 import { Puzzle } from "lucide-react";
 import { ExplainerPageShell } from "@/features/learning/explainer/components/ExplainerPageShell";
 import { DraftStatus } from "@/features/learning/explainer/components/DraftStatus";
@@ -17,6 +18,8 @@ import { useToolRequest } from "@/features/learning/explainer/hooks/useToolReque
 import { generatePuzzleAction, evaluatePuzzleAction } from "../../actions";
 import {
   PuzzleFormSchema,
+  type PuzzleEvaluationRequest,
+  type PuzzleEvaluationResponse,
   type PuzzleFormValues,
   type PuzzleResponse,
   type PuzzleRound,
@@ -25,7 +28,7 @@ import { cognitiveDomainOptions, difficultyLevelOptions, puzzleTypeOptions } fro
 import { PuzzleResult } from "../results/PuzzleResult";
 
 const STORAGE_KEY = "practice.puzzle.form.v1";
-const ROUND_KEY = "practice.puzzle.round.v1";
+const ROUND_KEY = "practice.puzzle.round.v2";
 
 const DEFAULTS: PuzzleFormValues = {
   field_of_interest: "Ancient Egypt",
@@ -46,12 +49,25 @@ export function PuzzlePage() {
   });
   const generate = useToolRequest<PuzzleFormValues, PuzzleResponse>({
     run: generatePuzzleAction,
-    onSuccess: (result) => round.setValue({ puzzle: result, evaluation: null, userAnswer: "" }),
+    onSuccess: (result) => {
+      evaluate.reset();
+      round.setValue({ puzzle: result, attempts: [], userAnswer: "" });
+    },
   });
-  const evaluate = useToolRequest<any, any>({
+  const pendingAnswerRef = useRef("");
+  const evaluate = useToolRequest<PuzzleEvaluationRequest, PuzzleEvaluationResponse>({
     run: evaluatePuzzleAction,
     onSuccess: (result) => {
-      if (round.value) round.setValue({ ...round.value, evaluation: result });
+      const answer = pendingAnswerRef.current;
+      pendingAnswerRef.current = "";
+      round.setValue((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          attempts: [...current.attempts, { answer, evaluation: result }],
+          userAnswer: "",
+        };
+      });
     },
   });
 
@@ -61,16 +77,19 @@ export function PuzzlePage() {
     const current = round.value;
     if (!current || !answer.trim()) return;
     const { puzzle } = current;
-    round.setValue({ ...current, userAnswer: answer });
+    const trimmed = answer.trim();
+    pendingAnswerRef.current = trimmed;
+    round.setValue({ ...current, userAnswer: trimmed });
     evaluate.execute({
       puzzle_context: puzzle.puzzle_text,
       puzzle_type: puzzleTypeOf(puzzle),
       official_solution: puzzle.solution,
-      user_response: answer.trim(),
+      user_response: trimmed,
     });
   };
 
   const handleNewPuzzle = () => {
+    evaluate.reset();
     round.setValue(null);
     persisted.resetDraft();
   };
@@ -83,7 +102,7 @@ export function PuzzlePage() {
   return (
     <ExplainerPageShell
       title="Puzzle Generator"
-      description="Generate a personalized cognitive puzzle — riddle, logic grid, sequence, wordplay, or cipher — and get scored on your answer."
+      description="Generate a personalized cognitive puzzle — riddle, logic grid, sequence, wordplay, or cipher — then keep guessing until you crack it and get scored on each attempt."
       headerAction={
         <DraftStatus
           status={persisted.status}
@@ -143,7 +162,7 @@ export function PuzzlePage() {
         round.value ? (
           <PuzzleResult
             puzzle={round.value.puzzle}
-            evaluation={round.value.evaluation}
+            attempts={round.value.attempts}
             userAnswer={round.value.userAnswer}
             isPending={evaluate.isPending}
             error={evaluate.error}

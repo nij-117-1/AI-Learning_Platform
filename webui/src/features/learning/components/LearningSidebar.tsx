@@ -23,6 +23,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { GraduationCap, LayoutGrid, MapPinned } from "lucide-react";
+import { conceptualBridgeTools } from "@/features/learning/lib/conceptual-bridge-tools";
 import { explainerTools } from "@/features/learning/lib/explainer-tools";
 import { guidesTools } from "@/features/learning/lib/guides-tools";
 import { memoryHelperTools } from "@/features/learning/lib/memory-helper-tools";
@@ -238,6 +239,23 @@ export function LearningSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {tutorChatTools.map((tool) => (
+                <SidebarMenuItem key={tool.id}>
+                  <SidebarMenuButton asChild isActive={pathname === tool.href} tooltip={tool.shortTitle}>
+                    <Link href={tool.href}>
+                      <tool.icon />
+                      <span>{tool.shortTitle}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Conceptual Bridge</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {conceptualBridgeTools.map((tool) => (
                 <SidebarMenuItem key={tool.id}>
                   <SidebarMenuButton asChild isActive={pathname === tool.href} tooltip={tool.shortTitle}>
                     <Link href={tool.href}>

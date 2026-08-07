@@ -49,9 +49,15 @@ export const RiddleEvaluationResponseSchema = z.object({
 });
 export type RiddleEvaluationResponse = z.infer<typeof RiddleEvaluationResponseSchema>;
 
-/** Persisted state for an in-progress riddle round. */
+/** A single answer attempt in a riddle round, with its evaluation. */
+export interface RiddleAttempt {
+  answer: string;
+  evaluation: RiddleEvaluationResponse;
+}
+
+/** Persisted state for an in-progress riddle round (the guess-until-correct game). */
 export interface RiddleRound {
   riddle: RiddleResponse;
-  evaluation: RiddleEvaluationResponse | null;
+  attempts: RiddleAttempt[];
   userAnswer: string;
 }
