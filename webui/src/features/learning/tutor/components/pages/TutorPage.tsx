@@ -1,12 +1,16 @@
 // src/features/learning/tutor/components/pages/TutorPage.tsx
 /**
- * Adaptive Tutor tool page. Prefilled, localStorage-persisted form wired to
- * the tutor explain Server Action with full loading/error UX.
+ * Adaptive Tutor tool page. Users can autofill the system prompt from a saved
+ * template (stored server-side in data/tutor/prompts/), pick a preset or custom
+ * learning style, and generate an explanation. After each generation the
+ * question moves to "last topic taught" and the question clears for the next
+ * turn. Every response is kept as a resettable version history in localStorage.
  */
 "use client";
 
 import type { z } from "zod";
 import { Presentation } from "lucide-react";
+import { useCallback, useEffect } from "react";
 import { usePersistedForm } from "@/features/learning/explainer/hooks/usePersistedForm";
 import { useToolRequest } from "@/features/learning/explainer/hooks/useToolRequest";
 import { ExplainerPageShell } from "@/features/learning/explainer/components/ExplainerPageShell";
@@ -14,18 +18,23 @@ import { DraftStatus } from "@/features/learning/explainer/components/DraftStatu
 import { FormActions } from "@/features/learning/explainer/components/FormActions";
 import { EmptyResult } from "@/features/learning/explainer/components/EmptyResult";
 import {
+  CustomSelectField,
   InputField,
-  SelectField,
   TextareaField,
 } from "@/features/learning/explainer/components/fields";
 import { TutorFormSchema, type TutorResponse } from "../../types";
 import { tutorExplainAction } from "../../actions/explain";
-import { TutorResult } from "../results/TutorResult";
+import { useResponseVersions } from "../../hooks/useResponseVersions";
+import { usePromptTemplates } from "../../hooks/usePromptTemplates";
 import { learningStyleOptions } from "../../lib/options";
+import { SystemPromptSelector } from "../fields/SystemPromptSelector";
+import { TutorResult } from "../results/TutorResult";
+import { TutorResponseHistory } from "../results/TutorResponseHistory";
 
 type TutorFormValues = z.infer<typeof TutorFormSchema>;
 
 const STORAGE_KEY = "learning.tutor.explain.v1";
+const RESPONSES_KEY = "learning.tutor.responses.v1";
 
 const DEFAULTS: TutorFormValues = {
   system_prompt:
@@ -43,13 +52,57 @@ export function TutorPage() {
     storageKey: STORAGE_KEY,
     defaults: DEFAULTS,
   });
+  const versions = useResponseVersions({ storageKey: RESPONSES_KEY });
+  const templates = usePromptTemplates();
+
+  const {
+    versions: versionList,
+    active: activeVersion,
+    activeIndex,
+    hydrated,
+    push: pushVersion,
+    goTo: goToVersion,
+    reset: resetVersions,
+  } = versions;
+
+  const handleSuccess = useCallback(
+    (result: TutorResponse) => {
+      pushVersion(result);
+      persisted.setResult(result);
+      const values = persisted.form.getValues();
+      persisted.form.setValue("last_topic_taught", values.user_query.trim());
+      persisted.form.setValue("user_query", "");
+    },
+    [pushVersion, persisted]
+  );
+
   const tool = useToolRequest<TutorFormValues, TutorResponse>({
     run: tutorExplainAction,
-    onSuccess: persisted.setResult,
+    onSuccess: handleSuccess,
   });
 
+  // Migrate a previously persisted single result into the version history.
+  useEffect(() => {
+    if (hydrated && versionList.length === 0 && persisted.result) {
+      pushVersion(persisted.result);
+    }
+  }, [hydrated, versionList.length, persisted.result, pushVersion]);
+
+  const handleResetResponses = () => {
+    resetVersions();
+    persisted.setResult(null);
+    tool.reset();
+  };
+
+  const applyTemplate = useCallback(
+    (content: string) => {
+      persisted.form.setValue("system_prompt", content);
+    },
+    [persisted.form]
+  );
+
   const errors = persisted.form.formState.errors;
-  const result = tool.data ?? persisted.result;
+  const displayed = activeVersion ?? persisted.result;
 
   return (
     <ExplainerPageShell
@@ -65,11 +118,18 @@ export function TutorPage() {
       }
       form={
         <form onSubmit={persisted.form.handleSubmit(tool.execute)} className="space-y-4">
+          <SystemPromptSelector
+            prompts={templates.prompts}
+            isLoading={templates.isLoading}
+            disabled={tool.isPending}
+            error={templates.error}
+            onApply={applyTemplate}
+          />
           <TextareaField
             label="System Prompt (Tutor Persona)"
             htmlFor="system_prompt"
             placeholder="How should the tutor behave and teach?"
-            hint="The persona and pedagogical rules. Edit to change the tutoring style."
+            hint="The persona and pedagogical rules. Pick a template above to autofill, then edit freely."
             disabled={tool.isPending}
             {...persisted.form.register("system_prompt")}
             error={errors.system_prompt?.message}
@@ -78,6 +138,7 @@ export function TutorPage() {
             label="Your Question"
             htmlFor="user_query"
             placeholder="Ask the question you are struggling with…"
+            hint="After answering, your question moves to 'Last Topic Taught'."
             disabled={tool.isPending}
             {...persisted.form.register("user_query")}
             error={errors.user_query?.message}
@@ -90,7 +151,7 @@ export function TutorPage() {
             {...persisted.form.register("student_level")}
             error={errors.student_level?.message}
           />
-          <SelectField
+          <CustomSelectField
             label="Learning Style"
             name="learning_style"
             htmlFor="learning_style"
@@ -98,6 +159,8 @@ export function TutorPage() {
             options={learningStyleOptions}
             disabled={tool.isPending}
             error={errors.learning_style?.message}
+            customLabel="Other / Custom"
+            customPlaceholder="Describe your preferred learning style…"
           />
           <InputField
             label="Current Scenario"
@@ -111,7 +174,7 @@ export function TutorPage() {
             label="Last Topic Taught"
             htmlFor="last_topic_taught"
             placeholder="Optional — previous lesson context…"
-            hint="Optional."
+            hint="Filled automatically from your previous question."
             disabled={tool.isPending}
             {...persisted.form.register("last_topic_taught")}
             error={errors.last_topic_taught?.message}
@@ -125,8 +188,16 @@ export function TutorPage() {
         </form>
       }
       result={
-        result ? (
-          <TutorResult result={result} />
+        displayed ? (
+          <div className="space-y-3">
+            <TutorResponseHistory
+              versions={versionList}
+              activeIndex={activeIndex}
+              onNavigate={goToVersion}
+              onReset={handleResetResponses}
+            />
+            <TutorResult result={displayed} />
+          </div>
         ) : (
           <EmptyResult
             icon={Presentation}

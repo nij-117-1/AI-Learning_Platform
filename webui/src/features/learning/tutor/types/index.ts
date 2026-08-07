@@ -13,13 +13,12 @@ export const learningStyles = [
   "visual",
   "example_driven",
 ] as const;
-export const LearningStyleSchema = z.enum(learningStyles);
 
 export const TutorFormSchema = z.object({
   system_prompt: z.string().trim().min(10, "System prompt is too short").max(4000),
   user_query: z.string().trim().min(3, "Your question is required").max(2000),
   student_level: z.string().trim().min(2, "Student level is required").max(200),
-  learning_style: LearningStyleSchema.default("analogical"),
+  learning_style: z.string().trim().min(2, "Learning style is required").max(200).default("analogical"),
   current_scenario: z.string().trim().min(2, "Learning scenario is required").max(500),
   last_topic_taught: z.string().trim().max(500).default(""),
 });
@@ -48,6 +47,9 @@ export const TutorResponseSchema = z.object({
   tutor_feedback: z.string(),
 });
 export type TutorResponse = z.infer<typeof TutorResponseSchema>;
+
+/** The versioned response history kept in browser localStorage. */
+export const TutorResponseListSchema = z.array(TutorResponseSchema);
 
 export const PromptResponseSchema = z.object({
   name: z.string(),

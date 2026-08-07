@@ -1,46 +1,59 @@
 // src/features/learning/tutor/actions/prompts.ts
 /**
- * Server Actions for the Adaptive Tutor prompt-template CRUD endpoints
- * (POST/GET /learning/tutor/prompts, GET/DELETE /learning/tutor/prompts/{name}).
+ * Server Actions for the Adaptive Tutor prompt template library, now backed by
+ * local files in data/tutor/prompts/ instead of the backend. The PromptManager
+ * page and the Tutor page both call these; templates are shared, not per-user.
  */
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { validateIdentity } from "@/features/identity/lib/auth-guard";
+import { safeParse } from "@/features/learning/lib/api";
 import {
-  PromptActionResponseSchema,
-  PromptListResponseSchema,
   PromptResponseSchema,
   PromptSaveSchema,
   type PromptActionResponse,
   type PromptResponse,
   type PromptSaveValues,
 } from "../types";
-import { deleteJson, getJson, postJson, safeParse, tutorApiUrl } from "../lib/api";
-
-function promptNameUrl(name: string): string {
-  return tutorApiUrl(`prompts/${encodeURIComponent(name)}`);
-}
+import {
+  deletePromptFromStore,
+  getPromptFromStore,
+  listPromptFiles,
+  savePromptToStore,
+} from "../lib/prompt-db";
 
 export async function listPromptsAction(): Promise<string[]> {
-  const raw = await getJson<unknown>(tutorApiUrl("prompts"));
-  return safeParse(PromptListResponseSchema, raw, "Invalid prompts list");
+  const prompts = await listPromptFiles();
+  return prompts.map((prompt) => prompt.name);
+}
+
+/** Returns the full template documents (name + content + timestamps). */
+export async function getAllPromptsAction(): Promise<PromptResponse[]> {
+  return listPromptFiles();
 }
 
 export async function getPromptAction(name: string): Promise<PromptResponse> {
-  const raw = await getJson<unknown>(promptNameUrl(name));
-  return safeParse(PromptResponseSchema, raw, "Invalid prompt response");
+  const prompt = await getPromptFromStore(name);
+  if (!prompt) throw new Error("Prompt not found.");
+  return safeParse(PromptResponseSchema, prompt, "Invalid prompt");
 }
 
 export async function savePromptAction(
   input: PromptSaveValues
 ): Promise<PromptActionResponse> {
-  safeParse(PromptSaveSchema, input, "Invalid prompt payload");
-  const raw = await postJson<unknown>(tutorApiUrl("prompts"), {
-    name: input.name,
-    content: input.content,
-  });
-  return safeParse(PromptActionResponseSchema, raw, "Invalid prompt save response");
+  await validateIdentity();
+  const payload = safeParse(PromptSaveSchema, input, "Invalid prompt payload");
+  await savePromptToStore(payload.name, payload.content);
+
+  revalidatePath("/learning/tutor");
+  revalidatePath("/learning/tutor/prompts");
+  return { message: `Prompt '${payload.name}' saved successfully` };
 }
 
 export async function deletePromptAction(name: string): Promise<void> {
-  await deleteJson<void>(promptNameUrl(name));
+  await validateIdentity();
+  const removed = await deletePromptFromStore(name);
+  if (!removed) throw new Error("Prompt not found.");
+  revalidatePath("/learning/tutor/prompts");
 }

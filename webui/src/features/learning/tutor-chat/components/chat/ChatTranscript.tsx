@@ -2,8 +2,9 @@
 /**
  * Scrollable message list for the Tutor Chat. User messages are right-aligned
  * bubbles; assistant messages render their markdown through the shared
- * MarkdownContent component inside a left bubble, plus the optional concept
- * breakdown. Auto-scrolls to the latest message.
+ * MarkdownContent component inside a left bubble. Concept breakdowns are shown
+ * only in the right-hand BreakdownPanel, never inline. Auto-scrolls to the
+ * latest message.
  */
 "use client";
 
@@ -12,11 +13,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { MarkdownContent } from "@/components/ui/markdown-content";
 import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { UiChatMessage } from "../../types";
-import { EducationalBreakdown } from "./EducationalBreakdown";
+import type { ChatMessage } from "../../types";
 
 interface ChatTranscriptProps {
-  messages: UiChatMessage[];
+  messages: ChatMessage[];
   isPending: boolean;
 }
 
@@ -58,14 +58,11 @@ export function ChatTranscript({ messages, isPending }: ChatTranscriptProps) {
                 {isUser ? (
                   <p className="whitespace-pre-wrap break-words text-sm">{message.content}</p>
                 ) : (
-                  <div className="min-w-0">
-                    <MarkdownContent
-                      content={message.content}
-                      enableMath
-                      className="max-w-none text-foreground"
-                    />
-                    <EducationalBreakdown items={message.breakdown} />
-                  </div>
+                  <MarkdownContent
+                    content={message.content}
+                    enableMath
+                    className="max-w-none text-foreground"
+                  />
                 )}
               </div>
             </div>

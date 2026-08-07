@@ -19,13 +19,6 @@ export type EducationalBreakdown = z.infer<typeof EducationalBreakdownSchema>;
 
 export const ChatRoleSchema = z.enum(["user", "assistant"]);
 
-/** A chat turn as stored in the UI (adds the per-turn concept breakdown). */
-export const UiChatMessageSchema = ChatMessageSchema.extend({
-  role: ChatRoleSchema,
-  breakdown: z.array(EducationalBreakdownSchema).default([]),
-});
-export type UiChatMessage = z.infer<typeof UiChatMessageSchema>;
-
 export const TutorChatFormSchema = z.object({
   master_topic: z
     .string()
@@ -50,3 +43,49 @@ export const TutorChatResponseSchema = z.object({
   status: z.string().optional(),
 });
 export type TutorChatResponse = z.infer<typeof TutorChatResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Persisted session documents (stored in data/tutor/<id>.json)
+// ---------------------------------------------------------------------------
+
+/**
+ * A full tutor chat session persisted server-side. chat_history holds only the
+ * plain {role, content} turns (matching the backend contract); the educational
+ * breakdown for each assistant reply is kept separately in `breakdowns` so it
+ * never leaks into the chat history sent to the API.
+ */
+export const TutorChatSessionSchema = z.object({
+  id: z.string().min(1),
+  owner: z.string().min(1),
+  master_topic: z.string().min(1),
+  additional_context: z.string().default(""),
+  chat_history: z.array(ChatMessageSchema).default([]),
+  breakdowns: z.array(z.array(EducationalBreakdownSchema)).default([]),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type TutorChatSession = z.infer<typeof TutorChatSessionSchema>;
+
+/** Lightweight row for the session picker list. */
+export const TutorChatSessionSummarySchema = z.object({
+  id: z.string(),
+  master_topic: z.string(),
+  updatedAt: z.string(),
+  messageCount: z.number(),
+  lastMessage: z.string().default(""),
+});
+export type TutorChatSessionSummary = z.infer<typeof TutorChatSessionSummarySchema>;
+
+/** Payload for creating a session (id/owner/timestamps are added server-side). */
+export const CreateSessionInputSchema = z.object({
+  master_topic: z.string().trim().min(2, "Master topic is required").max(300),
+  additional_context: z.string().trim().max(2000).default(""),
+});
+export type CreateSessionInput = z.infer<typeof CreateSessionInputSchema>;
+
+/** Payload for updating a session's settings (topic + context). */
+export const UpdateSessionSettingsSchema = z.object({
+  master_topic: z.string().trim().min(2, "Master topic is required").max(300),
+  additional_context: z.string().trim().max(2000).default(""),
+});
+export type UpdateSessionSettings = z.infer<typeof UpdateSessionSettingsSchema>;
