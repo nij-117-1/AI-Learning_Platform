@@ -74,6 +74,9 @@
 }
 
 :root {
+  /* Shared navbar height token. Must live on :root (not inline on <header>)
+     so sibling subtrees like the fixed Sidebar can resolve it. */
+  --navbar-height: 4rem;
   --card: oklch(0.9699 0.0013 106.4238);
   --card-foreground: oklch(0.2795 0.0368 260.0310);
   --popover: oklch(0.9699 0.0013 106.4238);
