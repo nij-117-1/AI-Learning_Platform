@@ -29,6 +29,7 @@ import { guidesTools } from "@/features/learning/lib/guides-tools";
 import { memoryHelperTools } from "@/features/learning/lib/memory-helper-tools";
 import { motivationTools } from "@/features/learning/lib/motivation-tools";
 import { projectsTools } from "@/features/learning/lib/projects-tools";
+import { resourceSuggestorTools } from "@/features/learning/lib/resource-suggestor-tools";
 import { skillArchitectTools } from "@/features/learning/lib/skill-architect-tools";
 import { tutorChatTools } from "@/features/learning/lib/tutor-chat-tools";
 import { tutorTools } from "@/features/learning/lib/tutor-tools";
@@ -180,6 +181,23 @@ export function LearningSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {projectsTools.map((tool) => (
+                <SidebarMenuItem key={tool.id}>
+                  <SidebarMenuButton asChild isActive={pathname === tool.href} tooltip={tool.shortTitle}>
+                    <Link href={tool.href}>
+                      <tool.icon />
+                      <span>{tool.shortTitle}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Resources</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {resourceSuggestorTools.map((tool) => (
                 <SidebarMenuItem key={tool.id}>
                   <SidebarMenuButton asChild isActive={pathname === tool.href} tooltip={tool.shortTitle}>
                     <Link href={tool.href}>

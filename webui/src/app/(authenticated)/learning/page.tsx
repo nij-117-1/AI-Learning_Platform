@@ -9,6 +9,7 @@ import { conceptualBridgeTools } from "@/features/learning/lib/conceptual-bridge
 import { memoryHelperTools } from "@/features/learning/lib/memory-helper-tools";
 import { motivationTools } from "@/features/learning/lib/motivation-tools";
 import { projectsTools } from "@/features/learning/lib/projects-tools";
+import { resourceSuggestorTools } from "@/features/learning/lib/resource-suggestor-tools";
 import { skillArchitectTools } from "@/features/learning/lib/skill-architect-tools";
 import { tutorChatTools } from "@/features/learning/lib/tutor-chat-tools";
 import { tutorTools } from "@/features/learning/lib/tutor-tools";
@@ -82,6 +83,17 @@ export default function LearningPage() {
           description={projectsTools[0].description}
           icon={projectsTools[0].icon}
           accent={projectsTools[0].accent}
+        />
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold">Resource Suggestor</h2>
+        <LearningHubCard
+          href={resourceSuggestorTools[0].href}
+          title={resourceSuggestorTools[0].title}
+          description={resourceSuggestorTools[0].description}
+          icon={resourceSuggestorTools[0].icon}
+          accent={resourceSuggestorTools[0].accent}
         />
       </section>
 
