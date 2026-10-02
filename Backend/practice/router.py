@@ -7,6 +7,7 @@ from practice.debate.router import router as debate_router
 from practice.executive_eq.router import router as executive_eq_router
 from practice.foresight_trainer.router import router as foresight_trainer_router
 from practice.guess_game.router import router as guess_game_router
+from practice.interview.router import router as interview_router
 from practice.joke_coach.router import router as joke_coach_router
 from practice.negotiation.router import router as negotiation_router
 from practice.observation_trainer.router import router as observation_trainer_router
@@ -24,6 +25,7 @@ practice_router.include_router(debate_router)
 practice_router.include_router(executive_eq_router)
 practice_router.include_router(foresight_trainer_router)
 practice_router.include_router(guess_game_router)
+practice_router.include_router(interview_router)
 practice_router.include_router(joke_coach_router)
 practice_router.include_router(negotiation_router)
 practice_router.include_router(observation_trainer_router)
