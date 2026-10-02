@@ -304,6 +304,14 @@ export const pages: Page[] = [
     tags: ["practice", "observation", "vision", "training", "education"]
   },
   {
+    id: "interview",
+    title: "Interview Simulator",
+    description: "Run a gated mock interview: session manager, question generator, answer review and progress tracking.",
+    href: "/practice/interview",
+    category: "Practice",
+    tags: ["practice", "interview", "mock", "career", "simulation", "education"]
+  },
+  {
     id: "learning",
     title: "Learning Hub",
     description: "AI-powered explainer tools: quick explanations, A-to-Z tutorials, Feynman simplifications, and more.",
