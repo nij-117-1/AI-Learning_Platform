@@ -10,6 +10,7 @@ import { diagramTools } from "@/features/tools/lib/diagram-tools";
 import { creativeAssetsTools } from "@/features/tools/lib/creative-assets-tools";
 import { chartsTools } from "@/features/tools/lib/charts-tools";
 import { rssTools } from "@/features/tools/rss/lib/rss-tools";
+import { aiDetectorTools } from "@/features/tools/lib/ai-detector-tools";
 
 export const metadata: Metadata = {
   title: "Tools Hub",
@@ -43,7 +44,7 @@ export default function ToolsPage() {
           <h2 className="text-lg font-semibold">Content</h2>
         </div>
         <ToolsCardGrid
-          tools={[...socialPostsTools, ...creativeAssetsTools, ...flexibleWriterTools, ...promptGeneratorTools]}
+          tools={[...socialPostsTools, ...creativeAssetsTools, ...flexibleWriterTools, ...promptGeneratorTools, ...aiDetectorTools]}
         />
       </section>
 

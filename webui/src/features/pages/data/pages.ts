@@ -144,6 +144,14 @@ export const pages: Page[] = [
     tags: ["tools", "writer", "writing", "transform", "persona"]
   },
   {
+    id: "ai-detector",
+    title: "AI Detector",
+    description: "Detect AI-written text, humanize it, then re-detect to verify — each step runs on click.",
+    href: "/tools/ai-detector",
+    category: "Tools",
+    tags: ["tools", "ai", "detect", "detector", "humanize", "rewrite", "writing"]
+  },
+  {
     id: "diagram",
     title: "Diagram Generator",
     description: "Generate or refine Mermaid and Draw.io diagram code from natural language.",
